@@ -39,6 +39,20 @@ import re
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
 
+# ── Security limits ──────────────────────────────────────────────────────────
+_MAX_INPUT_LENGTH: int = 4_096   # chars; guards against DoS via huge payloads
+_MAX_SUES_CHUNKS:  int = 128     # slot chunks per SUES string
+_MAX_THREAD_ID:    int = 128     # chars in a thread_id
+_SAFE_LOG_STR_LEN: int = 64      # max chars echoed back in error messages
+
+_CTRL_RE = re.compile(r"[\x00-\x1f\x7f]")  # strip control chars from echoed values
+
+
+def _safe_echo(value: Any, max_len: int = _SAFE_LOG_STR_LEN) -> str:
+    """Return a sanitised, length-capped representation safe for error messages."""
+    s = _CTRL_RE.sub("", str(value))
+    return s[:max_len] + ("…" if len(s) > max_len else "")
+
 
 # =============================================================================
 # ① SUES → BIL concept map
@@ -662,7 +676,10 @@ def map_sues_term(term: str) -> str:
 
 def parse_sues_slots(sues: str) -> Dict[str, Any]:
     result: Dict[str, Any] = {}
-    for chunk in sues.split():
+    chunks = sues.split()
+    if len(chunks) > _MAX_SUES_CHUNKS:
+        raise ValueError(f"SUES string exceeds maximum slot count ({_MAX_SUES_CHUNKS})")
+    for chunk in chunks:
         if ":" not in chunk:
             continue
         key, raw_value = chunk.split(":", 1)
@@ -839,7 +856,8 @@ def validate_bil_ir(bil: Dict[str, Any]) -> Dict[str, Any]:
 def _tok(concept: Optional[str]) -> str:
     if not concept:
         return ""
-    return TOKEN_REGISTRY.get(concept, f"UNK_TOKEN[{concept}]")
+    # Do NOT echo concept back — avoids leaking internal paths to callers.
+    return TOKEN_REGISTRY.get(concept, "UNK_TOKEN")
 
 
 def _encode_value(value: Any) -> List[str]:
@@ -926,7 +944,11 @@ _ENGLISH_LABELS: Dict[str, str] = {
 def _label(concept: Optional[str]) -> str:
     if not concept:
         return ""
-    return _ENGLISH_LABELS.get(concept, concept)
+    label = _ENGLISH_LABELS.get(concept)
+    if label is not None:
+        return label
+    # Concept not in registry; strip control chars before including in output.
+    return _CTRL_RE.sub("", concept)
 
 
 def generate_english(bil: Dict[str, Any]) -> str:
@@ -974,20 +996,46 @@ def n8n_handle(payload: Dict[str, Any]) -> Dict[str, Any]:
           "input_text":  "<string>"
         }
     """
+    # ── Validate and normalise payload fields ────────────────────────────────
     thread_id  = payload.get("thread_id", "thread_default")
     input_text = payload.get("input_text", "")
     input_type = payload.get("input_type", "english")
 
+    if not isinstance(thread_id, str):
+        thread_id = "thread_default"
+    thread_id = _CTRL_RE.sub("", thread_id)[:_MAX_THREAD_ID]
+
+    if not isinstance(input_type, str):
+        return {"ok": False, "thread_id": thread_id, "error": "input_type must be a string"}
+
+    if not isinstance(input_text, str):
+        return {"ok": False, "thread_id": thread_id, "error": "input_text must be a string"}
+
     if not input_text:
         return {"ok": False, "thread_id": thread_id, "error": "Missing input_text"}
 
+    if len(input_text) > _MAX_INPUT_LENGTH:
+        return {
+            "ok": False,
+            "thread_id": thread_id,
+            "error": f"input_text exceeds maximum length of {_MAX_INPUT_LENGTH} characters",
+        }
+    # ── Dispatch ─────────────────────────────────────────────────────────────
     if input_type == "sues":
-        bil_ir = sues_to_bil_ir(input_text, thread_id=thread_id)
+        try:
+            bil_ir = sues_to_bil_ir(input_text, thread_id=thread_id)
+        except ValueError as exc:
+            return {"ok": False, "thread_id": thread_id, "error": str(exc)}
         bil_ir["source_text"] = input_text
     elif input_type == "english":
         bil_ir = english_to_bil_ir(input_text, thread_id=thread_id)
     else:
-        return {"ok": False, "thread_id": thread_id, "error": f"Unsupported input_type: {input_type}"}
+        # Sanitise input_type before echoing it back to prevent log injection.
+        return {
+            "ok": False,
+            "thread_id": thread_id,
+            "error": f"Unsupported input_type: {_safe_echo(input_type)}",
+        }
 
     validation  = validate_bil_ir(bil_ir)
     bil_tokens  = encode_bil_ir(bil_ir)
