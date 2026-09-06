@@ -79,22 +79,35 @@ def collect_safety_warnings(protocol: Protocol, config: SessionConfig) -> list[s
     return warnings
 
 
+def _resolve_output_dir(output_dir: str) -> str:
+    """Validate and resolve the session output directory before any filesystem call.
+
+    Rejects a parent-directory (``..``) segment outright, then resolves symlinks
+    and relative components so every later join and the initial ``os.makedirs``
+    call all operate on the same, already-validated absolute path — no filesystem
+    call in this module ever touches the raw, unvalidated ``output_dir`` argument.
+    """
+    if os.pardir in os.path.normpath(output_dir).split(os.sep):
+        raise ValueError(f"output_dir must not contain {os.pardir!r} segments: {output_dir!r}")
+    return os.path.realpath(output_dir)
+
+
 def _output_path(output_dir: str, filename: str) -> str:
-    """Resolve ``filename`` under ``output_dir``, refusing to write outside it.
+    """Resolve ``filename`` under an already-``_resolve_output_dir``-validated ``output_dir``.
 
     ``filename`` is always one of this module's own fixed constants (never derived
     from configuration or CLI input), but this still validates the resolved path
     stays within ``output_dir`` as defense in depth against path traversal.
     """
-    base = os.path.realpath(output_dir)
-    candidate = os.path.realpath(os.path.join(base, filename))
-    if os.path.commonpath([base, candidate]) != base:
+    candidate = os.path.realpath(os.path.join(output_dir, filename))
+    if os.path.commonpath([output_dir, candidate]) != output_dir:
         raise ValueError(f"refusing to write outside output_dir: {filename!r}")
     return candidate
 
 
 def render_session(protocol: Protocol, config: SessionConfig, output_dir: str) -> dict:
     """Render every configured channel into ``output_dir``. Returns the manifest dict."""
+    output_dir = _resolve_output_dir(output_dir)
     os.makedirs(output_dir, exist_ok=True)
     warnings = collect_safety_warnings(protocol, config)
 
