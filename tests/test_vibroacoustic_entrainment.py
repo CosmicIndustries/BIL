@@ -205,6 +205,20 @@ class SessionTests(unittest.TestCase):
             with self.assertRaises(EntrainmentSafetyError):
                 render_session(protocol, config, d)
 
+    def test_output_path_stays_within_output_dir(self):
+        from vibroacoustic_entrainment.session import _output_path
+
+        with tempfile.TemporaryDirectory() as d:
+            resolved = _output_path(d, "audio.wav")
+            self.assertEqual(os.path.dirname(resolved), os.path.realpath(d))
+
+    def test_output_path_rejects_traversal(self):
+        from vibroacoustic_entrainment.session import _output_path
+
+        with tempfile.TemporaryDirectory() as d:
+            with self.assertRaises(ValueError):
+                _output_path(d, "../escaped.wav")
+
 
 if __name__ == "__main__":
     unittest.main()

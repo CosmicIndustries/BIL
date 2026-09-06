@@ -79,6 +79,20 @@ def collect_safety_warnings(protocol: Protocol, config: SessionConfig) -> list[s
     return warnings
 
 
+def _output_path(output_dir: str, filename: str) -> str:
+    """Resolve ``filename`` under ``output_dir``, refusing to write outside it.
+
+    ``filename`` is always one of this module's own fixed constants (never derived
+    from configuration or CLI input), but this still validates the resolved path
+    stays within ``output_dir`` as defense in depth against path traversal.
+    """
+    base = os.path.realpath(output_dir)
+    candidate = os.path.realpath(os.path.join(base, filename))
+    if os.path.commonpath([base, candidate]) != base:
+        raise ValueError(f"refusing to write outside output_dir: {filename!r}")
+    return candidate
+
+
 def render_session(protocol: Protocol, config: SessionConfig, output_dir: str) -> dict:
     """Render every configured channel into ``output_dir``. Returns the manifest dict."""
     os.makedirs(output_dir, exist_ok=True)
@@ -97,12 +111,12 @@ def render_session(protocol: Protocol, config: SessionConfig, output_dir: str) -
 
     if config.audio_mode == "binaural":
         left, right = oscillators.render_binaural(protocol, config.sample_rate, config.audio_amplitude)
-        audio_path = os.path.join(output_dir, "audio.wav")
+        audio_path = _output_path(output_dir, "audio.wav")
         oscillators.write_wav_stereo(audio_path, left, right, config.sample_rate)
     else:
         renderer = oscillators.render_monaural if config.audio_mode == "monaural" else oscillators.render_isochronic
         mono = renderer(protocol, config.sample_rate, config.audio_amplitude)
-        audio_path = os.path.join(output_dir, "audio.wav")
+        audio_path = _output_path(output_dir, "audio.wav")
         oscillators.write_wav_mono(audio_path, mono, config.sample_rate)
     manifest["files"]["audio"] = os.path.basename(audio_path)
 
@@ -114,14 +128,14 @@ def render_session(protocol: Protocol, config: SessionConfig, output_dir: str) -
             tactile_carrier_hz=config.haptic_carrier_hz,
             amplitude=config.haptic_amplitude,
         )
-        haptic_wav_path = os.path.join(output_dir, "haptic.wav")
+        haptic_wav_path = _output_path(output_dir, "haptic.wav")
         oscillators.write_wav_mono(haptic_wav_path, haptic_track, config.sample_rate)
         manifest["files"]["haptic_wav"] = os.path.basename(haptic_wav_path)
 
         envelope = haptic.render_haptic_envelope_json(
             protocol, control_rate_hz=config.haptic_control_rate_hz, mode=config.haptic_mode
         )
-        haptic_json_path = os.path.join(output_dir, "haptic_envelope.json")
+        haptic_json_path = _output_path(output_dir, "haptic_envelope.json")
         with open(haptic_json_path, "w") as f:
             json.dump(envelope, f)
         manifest["files"]["haptic_envelope"] = os.path.basename(haptic_json_path)
@@ -133,12 +147,12 @@ def render_session(protocol: Protocol, config: SessionConfig, output_dir: str) -
             waveform=config.photic_waveform,
             acknowledge_risks=config.acknowledge_risks,
         )
-        photic_path = os.path.join(output_dir, "photic_events.json")
+        photic_path = _output_path(output_dir, "photic_events.json")
         with open(photic_path, "w") as f:
             json.dump(events, f)
         manifest["files"]["photic_events"] = os.path.basename(photic_path)
 
-    manifest_path = os.path.join(output_dir, "manifest.json")
+    manifest_path = _output_path(output_dir, "manifest.json")
     with open(manifest_path, "w") as f:
         json.dump(manifest, f, indent=2)
 
