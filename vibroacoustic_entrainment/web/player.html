@@ -205,6 +205,23 @@
   .stage-name { font-size: 13.5px; color: var(--text-dim); }
   .stage-name b { color: var(--text); font-weight: 600; }
 
+  .guidance {
+    background: var(--panel-2);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .guidance .label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 6px; }
+  .guidance-text {
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--text);
+    font-style: italic;
+    max-width: 62ch;
+    min-height: 1.55em;
+    transition: opacity 0.6s ease;
+  }
+
   .strobe-row { display: flex; gap: 14px; align-items: center; }
   .strobe-swatch {
     width: 64px; height: 64px;
@@ -277,9 +294,21 @@
     margin-bottom: 28px;
     font-family: 'IBM Plex Mono', monospace;
   }
+  #strobeOverlay .overlay-guidance {
+    color: rgba(255,255,255,0.88);
+    font-size: 22px;
+    font-style: italic;
+    line-height: 1.5;
+    max-width: 58ch;
+    text-align: center;
+    margin: 0 24px 18px;
+    transition: opacity 0.6s ease;
+  }
 
   @media (prefers-reduced-motion: reduce) {
-    .readout .value.band { transition: none; }
+    .readout .value.band,
+    .guidance-text,
+    #strobeOverlay .overlay-guidance { transition: none; }
   }
 </style>
 
@@ -381,6 +410,11 @@
         <div class="track-labels"><span>0:00</span><span id="trackTotalLabel">12:00</span></div>
       </div>
 
+      <div class="guidance">
+        <div class="label">Guidance</div>
+        <div class="guidance-text" id="guidanceText">Find a comfortable position, lying down if you can. Let your eyes close.</div>
+      </div>
+
       <div class="strobe-row">
         <div class="strobe-swatch" id="swatch"></div>
         <div class="strobe-meta">
@@ -403,6 +437,7 @@
 
 <div id="strobeOverlay">
   <button id="exitStrobeBtn">Exit fullscreen (Esc)</button>
+  <div class="overlay-guidance" id="overlayGuidanceText">Find a comfortable position, lying down if you can. Let your eyes close.</div>
   <div class="exit-hint" id="overlayStageLabel">focus10_settle &middot; 10.00 Hz</div>
 </div>
 
@@ -412,8 +447,8 @@
 
   // ---- Protocol model (ported from vibroacoustic_entrainment/protocol.py) ----
 
-  function stage(name, duration_s, freq_start, freq_end, note) {
-    return { name, duration_s, freq_start, freq_end, note: note || "" };
+  function stage(name, duration_s, freq_start, freq_end, note, cues) {
+    return { name, duration_s, freq_start, freq_end, note: note || "", cues: cues || [] };
   }
 
   function stageFreqAt(s, t) {
@@ -458,28 +493,62 @@
         return row;
       });
     }
-    return { name, stages, carrier_hz, description, total_duration, locate, freqAt, phaseAt, stageBoundaries };
+    // Flatten each stage's {frac, text} cues into one absolute-time-sorted guidance script.
+    const guidanceCues = (() => {
+      let t = 0;
+      const out = [];
+      for (const s of stages) {
+        for (const c of s.cues) out.push({ t: t + c.frac * s.duration_s, text: c.text });
+        t += s.duration_s;
+      }
+      out.sort((a, b) => a.t - b.t);
+      return out;
+    })();
+    function cueAt(t) {
+      let current = guidanceCues.length ? guidanceCues[0] : null;
+      for (const c of guidanceCues) { if (c.t <= t) current = c; else break; }
+      return current;
+    }
+    return { name, stages, carrier_hz, description, total_duration, locate, freqAt, phaseAt, stageBoundaries, guidanceCues, cueAt };
   }
 
   function gatewayFocus10(duration_s, carrier_hz) {
     duration_s = duration_s || 720; carrier_hz = carrier_hz || 200;
     return makeProtocol("gateway_focus10", [
-      stage("focus10_settle", duration_s * 0.25, 10.0, 10.0, "Alpha settle / body relaxation."),
-      stage("focus10_descend", duration_s * 0.75, 10.0, 7.0, "Alpha -> theta border descent."),
+      stage("focus10_settle", duration_s * 0.25, 10.0, 10.0, "Alpha settle / body relaxation.", [
+        { frac: 0.0, text: "Find a comfortable position, lying down if you can. Let your eyes close." },
+        { frac: 0.35, text: "Take three slow breaths. With each one, let more of your weight sink down." },
+        { frac: 0.75, text: "There's nothing to do yet — just let the sound hold your attention." },
+      ]),
+      stage("focus10_descend", duration_s * 0.75, 10.0, 7.0, "Alpha -> theta border descent.", [
+        { frac: 0.0, text: "Notice the tone beginning to change. You don't need to do anything with it — just notice." },
+        { frac: 0.4, text: "Mind awake, body asleep. Let your body feel heavier while your attention stays clear." },
+        { frac: 0.85, text: "Stay here as long as feels right. There's nowhere else you need to be." },
+      ]),
     ], carrier_hz, "Monroe-style Focus 10: relaxed alertness, alpha descending toward theta.");
   }
   function gatewayFocus12(duration_s, carrier_hz) {
     duration_s = duration_s || 600; carrier_hz = carrier_hz || 200;
     return makeProtocol("gateway_focus12", [
-      stage("focus12_bridge", duration_s * 0.2, 7.0, 6.0, "Bridge in from Focus 10."),
-      stage("focus12_theta", duration_s * 0.8, 6.0, 4.0, "Settle into mid/low theta."),
+      stage("focus12_bridge", duration_s * 0.2, 7.0, 6.0, "Bridge in from Focus 10.", [
+        { frac: 0.0, text: "Let the sound carry you a little further down. Nothing to hold on to, nothing to push away." },
+      ]),
+      stage("focus12_theta", duration_s * 0.8, 6.0, 4.0, "Settle into mid/low theta.", [
+        { frac: 0.15, text: "This is expanded awareness — attention wider than the room you're in." },
+        { frac: 0.6, text: "If thoughts drift through, let them pass like something seen from a train window." },
+      ]),
     ], carrier_hz, "Monroe-style Focus 12: theta-dominant expanded awareness.");
   }
   function gatewayFocus15(duration_s, carrier_hz) {
     duration_s = duration_s || 600; carrier_hz = carrier_hz || 200;
     return makeProtocol("gateway_focus15", [
-      stage("focus15_bridge", duration_s * 0.25, 4.0, 3.0, "Bridge in from Focus 12."),
-      stage("focus15_delta_theta", duration_s * 0.75, 3.0, 2.0, "Theta/delta border plateau."),
+      stage("focus15_bridge", duration_s * 0.25, 4.0, 3.0, "Bridge in from Focus 12.", [
+        { frac: 0.0, text: "Time loosens here. Don't track it — just notice how still things have become." },
+      ]),
+      stage("focus15_delta_theta", duration_s * 0.75, 3.0, 2.0, "Theta/delta border plateau.", [
+        { frac: 0.2, text: "No time. No place to be next." },
+        { frac: 0.7, text: "Rest at this depth. Let the stillness hold you." },
+      ]),
     ], carrier_hz, "Monroe-style Focus 15: theta/delta border, minimal cortical arousal.");
   }
   function gatewayFull(carrier_hz) {
@@ -490,8 +559,15 @@
   function obePhase(carrier_hz) {
     carrier_hz = carrier_hz || 200;
     const f10 = gatewayFocus10(600, carrier_hz), f12 = gatewayFocus12(480, carrier_hz);
-    const bridge = stage("phase_bridge", 180, 4.0, 4.0, "Bridge from Focus 12 into the plateau.");
-    const plateau = stage("phase_plateau", 900, 4.0, 4.0, "Extended low-theta hold ('stay in the state') -- the target phase window.");
+    const bridge = stage("phase_bridge", 180, 4.0, 4.0, "Bridge from Focus 12 into the plateau.", [
+      { frac: 0.0, text: "Settle in. What comes next asks for patience, not effort." },
+    ]);
+    const plateau = stage("phase_plateau", 900, 4.0, 4.0, "Extended low-theta hold ('stay in the state') -- the target phase window.", [
+      { frac: 0.0, text: "Hold this state exactly as it is. Don't try to fall asleep, and don't try to wake up further — just stay." },
+      { frac: 0.3, text: "If you feel a hum, a pulse, a vibration — that's the sensation this stage is known for. Let it build on its own." },
+      { frac: 0.6, text: "Curiosity, not effort. Notice without reaching." },
+      { frac: 0.88, text: "We're coming back now. Let the pulse settle. Wiggle your fingers when you're ready." },
+    ]);
     return makeProtocol("hyper_cognition_obe_phase_protocol", [...f10.stages, ...f12.stages, bridge, plateau], carrier_hz,
       "Focus 10 -> 12 -> extended 4 Hz theta plateau, modeled on OBE-induction literature's 'hold the vibrational stage' instruction. Experiential target, not a validated neuroscience protocol.");
   }
@@ -560,6 +636,8 @@
   const strobeOverlay = document.getElementById("strobeOverlay");
   const overlayStageLabel = document.getElementById("overlayStageLabel");
   const exitStrobeBtn = document.getElementById("exitStrobeBtn");
+  const guidanceText = document.getElementById("guidanceText");
+  const overlayGuidanceText = document.getElementById("overlayGuidanceText");
 
   for (const [key, def] of Object.entries(PROTOCOLS)) {
     const opt = document.createElement("option");
@@ -572,6 +650,7 @@
   let running = false;
   let audioCtx = null;
   let hapticPattern = null;
+  let lastCueText = null;
 
   function getAudioMode() { return document.querySelector('input[name="audioMode"]:checked').value; }
   function getPhoticWave() { return document.querySelector('input[name="photicWave"]:checked').value; }
@@ -635,6 +714,11 @@
     stageIndexReadout.textContent = "1 / " + bd.length;
     stageNameReadout.textContent = bd[0].name;
     overlayStageLabel.textContent = bd[0].name + " · " + f0.toFixed(2) + " Hz";
+    const firstCue = current.cueAt(0);
+    lastCueText = firstCue ? firstCue.text : null;
+    guidanceText.style.opacity = "1";
+    guidanceText.textContent = lastCueText || "";
+    overlayGuidanceText.textContent = lastCueText || "";
     refreshRiskWarning();
     refreshStartEnabled();
   }
@@ -807,6 +891,19 @@
     stageIndexReadout.textContent = (idx + 1) + " / " + bd.length;
     stageNameReadout.textContent = s.name;
     overlayStageLabel.textContent = s.name + " · " + freq.toFixed(2) + " Hz";
+
+    const cue = current.cueAt(clamped);
+    if (cue && cue.text !== lastCueText) {
+      lastCueText = cue.text;
+      guidanceText.style.opacity = "0";
+      overlayGuidanceText.style.opacity = "0";
+      setTimeout(() => {
+        guidanceText.textContent = cue.text;
+        overlayGuidanceText.textContent = cue.text;
+        guidanceText.style.opacity = "1";
+        overlayGuidanceText.style.opacity = "1";
+      }, 220);
+    }
 
     const ph = document.getElementById("playhead");
     if (ph) ph.style.left = ((clamped / total) * 100) + "%";
