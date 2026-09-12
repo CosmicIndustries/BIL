@@ -22,7 +22,11 @@
 # is installed as the "Aquila" family. Without it, the system falls back
 # to Atkinson Hyperlegible and Lexend, which is a legitimate, permanent
 # choice, not just a placeholder -- both are open-licensed and independently
-# validated for low-vision/dyslexic readability.
+# validated for low-vision/dyslexic readability. It also will not fetch
+# and parse third-party network content to decide what to write to disk
+# while running as root: fallback fonts install only via apt; if your
+# release doesn't package one, the script tells you where to get it and
+# you drop the file in ./fonts/ yourself.
 
 set -euo pipefail
 
@@ -101,29 +105,24 @@ else
 fi
 
 # --- 2. Install fallback fonts (Atkinson Hyperlegible, Lexend) ---
-install_via_apt_or_download() {
-  local apt_pkg="$1" family_dirname="$2" css_family="$3"
+# Deliberately apt-only: this script runs as root, and does not fetch or
+# parse third-party network content to decide what to write to disk. If
+# your release doesn't package a font, install it yourself (e.g. from
+# https://fonts.google.com/specimen/Lexend) and drop the .ttf/.otf files
+# in $SCRIPT_DIR/fonts/ alongside a licensed Aquila file, then re-run --
+# they'll be picked up by step 1 above.
+install_via_apt() {
+  local apt_pkg="$1" manual_url="$2"
   if command -v apt-get >/dev/null 2>&1 && apt-cache show "$apt_pkg" >/dev/null 2>&1; then
     log "Installing $apt_pkg via apt"
     run apt-get install -y "$apt_pkg"
-    return
-  fi
-  log "$apt_pkg not available via apt on this release -- downloading TTFs from Google Fonts directly"
-  local dest="$FONT_DIR/$family_dirname"
-  run mkdir -p "$dest"
-  if $APPLY; then
-    local css
-    css="$(curl -fsSL -A "Mozilla/5.0" "https://fonts.googleapis.com/css2?family=${css_family}:wght@400;500;700&display=swap")"
-    echo "$css" | grep -oE 'https://fonts\.gstatic\.com/[^)]+\.ttf' | sort -u | while read -r url; do
-      curl -fsSL "$url" -o "$dest/$(basename "$url")"
-    done
   else
-    echo "  (dry run) curl Google Fonts CSS for '$css_family', download each .ttf into $dest"
+    log "$apt_pkg not packaged on this release. Download it yourself from $manual_url and drop the .ttf files in $SCRIPT_DIR/fonts/, then re-run."
   fi
 }
 
-install_via_apt_or_download "fonts-atkinson-hyperlegible-ttf" "atkinson-hyperlegible" "Atkinson+Hyperlegible"
-install_via_apt_or_download "fonts-lexend" "lexend" "Lexend"
+install_via_apt "fonts-atkinson-hyperlegible-ttf" "https://fonts.google.com/specimen/Atkinson+Hyperlegible"
+install_via_apt "fonts-lexend" "https://fonts.google.com/specimen/Lexend"
 
 # --- 3. System-wide fontconfig default for GUI apps ---
 log "Installing fontconfig default -> $FONTCONFIG_DEST"

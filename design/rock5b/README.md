@@ -39,5 +39,5 @@ sudo ./install-aquila-font.sh --rollback
 ## Notes
 
 - The script never invents or hotlinks a font file claiming to be "Aquila" — that's a brand typeface with its own license. It only installs it if you provide the real file; otherwise it uses the Atkinson Hyperlegible / Lexend fallback permanently, not as a placeholder.
-- Fallback fonts are installed via `apt` where the release ships them (`fonts-atkinson-hyperlegible-ttf` is in Ubuntu 24.04+ universe); otherwise the script downloads the TTFs directly from Google Fonts' CSS API at run time.
+- Fallback fonts install via `apt` only (`fonts-atkinson-hyperlegible-ttf` is in Ubuntu 24.04+ universe). The script does not fetch or parse third-party network content while running as root; if your release doesn't package a font, it prints where to download it and you drop the `.ttf`/`.otf` file in `fonts/` yourself, same as for the Aquila file.
 - Matches this repo's `rock5b` skill convention: dry-run by default, `--apply` to commit, every touched file backed up under `/var/backups/aquila-font/<timestamp>/`, `--rollback` restores the latest backup.
