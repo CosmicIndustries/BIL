@@ -1,0 +1,178 @@
+/*
+ * Aquila Design System -- ADHD- and dyslexia-friendly base theme.
+ * Source of truth for values lives in aquila-tokens.json; keep the two in sync.
+ */
+
+:root {
+  /* Color -- dark (default) */
+  --aq-bg: #060A12;
+  --aq-surface: #0B1420;
+  --aq-surface-alt: #10283C;
+  --aq-border: #1B3A4B;
+  --aq-accent: #22D3EE;       /* icons, borders, large graphics only -- not body text */
+  --aq-accent-text: #7FE7F5;  /* links / accent text -- AAA verified on --aq-bg */
+  --aq-text: #F2FBFF;
+  --aq-text-muted: #9FB8C6;
+  --aq-focus: #FFD166;        /* reserved exclusively for focus rings */
+  --aq-danger: #FF8A8A;
+  --aq-success: #5EEAD4;
+
+  /* Typography */
+  --aq-font-primary: 'Aquila', 'Atkinson Hyperlegible', 'Lexend', system-ui, sans-serif;
+  --aq-font-dyslexic: 'OpenDyslexic', 'Atkinson Hyperlegible', var(--aq-font-primary);
+  --aq-font-mono: 'Aquila Mono', 'JetBrains Mono', ui-monospace, monospace;
+  --aq-line-height: 1.6;
+  --aq-letter-spacing: 0.01em;
+  --aq-word-spacing: 0.06em;
+  --aq-measure: 70ch;
+
+  /* Spacing -- generous by default; ADHD-friendly breathing room */
+  --aq-space-1: 4px;
+  --aq-space-2: 8px;
+  --aq-space-3: 16px;
+  --aq-space-4: 24px;
+  --aq-space-5: 40px;
+  --aq-space-6: 64px;
+
+  --aq-radius-sm: 6px;
+  --aq-radius-md: 12px;
+  --aq-radius-lg: 20px;
+
+  /* Motion */
+  --aq-duration: 180ms;
+  --aq-easing: ease-out;
+
+  color-scheme: dark;
+}
+
+/* Light theme -- opt in via [data-theme="light"] on <html>; same AAA guarantee */
+[data-theme='light'] {
+  --aq-bg: #FBFEFF;
+  --aq-surface: #EFF7FA;
+  --aq-surface-alt: #DCEEF3;
+  --aq-border: #B8D3DC;
+  --aq-accent: #0F7C99;
+  --aq-accent-text: #0B5C73;
+  --aq-text: #0A1620;
+  --aq-text-muted: #3E5A66;
+  --aq-focus: #B8590A;
+  --aq-danger: #B3261E;
+  --aq-success: #0F7A5F;
+  color-scheme: light;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--aq-bg);
+  color: var(--aq-text);
+  font-family: var(--aq-font-primary);
+  line-height: var(--aq-line-height);
+  letter-spacing: var(--aq-letter-spacing);
+  word-spacing: var(--aq-word-spacing);
+  text-align: left; /* never justify body copy -- ragged right is easier to track */
+}
+
+/* Opt-in dyslexic mode: toggle via data-dyslexic-mode="on" on <html> or <body> */
+[data-dyslexic-mode='on'] {
+  font-family: var(--aq-font-dyslexic);
+  line-height: 1.8;
+  letter-spacing: 0.03em;
+  word-spacing: 0.12em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--aq-font-primary);
+  line-height: 1.3;
+  margin-block: var(--aq-space-4) var(--aq-space-2);
+}
+
+p, li, dd {
+  max-width: var(--aq-measure);
+}
+
+a {
+  color: var(--aq-accent-text);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+code, pre, kbd {
+  font-family: var(--aq-font-mono);
+}
+
+/* Strong, unmissable focus ring. Never remove focus outlines site-wide. */
+:focus-visible {
+  outline: 3px solid var(--aq-focus);
+  outline-offset: 2px;
+}
+
+/* Respect reduced motion fully: disable, don't just shorten. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * Never use tight repeating high-frequency patterns (fine stripes, moire,
+ * busy textures) for backgrounds or borders anywhere in the system --
+ * documented visual-stress trigger for dyslexic and photosensitive readers.
+ * Use flat fills or soft, low-frequency gradients only.
+ */
+
+.aq-surface {
+  background: var(--aq-surface);
+  border: 1px solid var(--aq-border);
+  border-radius: var(--aq-radius-md);
+  padding: var(--aq-space-4);
+}
+
+.aq-container {
+  max-width: 960px;
+  margin-inline: auto;
+  padding-inline: var(--aq-space-4);
+}
+
+.aq-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--aq-space-1);
+  padding: 2px var(--aq-space-2);
+  border-radius: 999px;
+  border: 1px solid var(--aq-border);
+  color: var(--aq-text-muted);
+  font-size: 0.875rem;
+}
+
+.aq-button {
+  font-family: inherit;
+  font-size: 1rem;
+  padding: var(--aq-space-2) var(--aq-space-4);
+  border-radius: var(--aq-radius-sm);
+  border: 1px solid var(--aq-accent);
+  background: transparent;
+  color: var(--aq-accent-text);
+  cursor: pointer;
+  transition: background var(--aq-duration) var(--aq-easing);
+}
+
+.aq-button:hover {
+  background: var(--aq-surface-alt);
+}
+
+.aq-button--primary {
+  background: var(--aq-accent);
+  color: var(--aq-bg);
+  border-color: var(--aq-accent);
+}
