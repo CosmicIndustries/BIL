@@ -1,0 +1,6 @@
+# Obsidian local/machine-specific state — never sync these
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+.obsidian/plugins/*/data.json
+.trash/
