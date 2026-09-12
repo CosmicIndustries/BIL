@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #
 # install-aquila-font.sh -- apply the Aquila design system's font stack to
-# this machine: system-wide fontconfig default for GUI apps, plus an
-# optional larger/clearer console (TTY) font.
+# this machine: system-wide fontconfig default for GUI apps, the actual
+# KDE Plasma desktop font (kdeglobals) if this is a Plasma system, plus
+# an optional larger/clearer console (TTY) font.
 #
 # Follows the same convention as the rock5b skill's own tune/remediate
 # scripts: DRY RUN by default, nothing is changed until you pass --apply.
@@ -37,6 +38,24 @@ ROLLBACK=false
 BACKUP_ROOT="/var/backups/aquila-font"
 FONT_DIR="/usr/local/share/fonts/aquila"
 FONTCONFIG_DEST="/etc/fonts/conf.d/60-aquila.conf"
+AQUILA_FONT_SPEC="Aquila,10,-1,5,50,0,0,0,0,0"
+
+# The desktop user, if this was invoked as `sudo ./install-aquila-font.sh`
+# from a normal login session -- needed because KDE's font setting lives
+# in that user's ~/.config/kdeglobals, not anywhere root-writable.
+KDE_USER="${SUDO_USER:-}"
+KDE_HOME=""
+KDEGLOBALS=""
+if [[ -n "$KDE_USER" ]]; then
+  KDE_HOME="$(getent passwd "$KDE_USER" | cut -d: -f6)" || KDE_HOME=""
+  [[ -n "$KDE_HOME" ]] && KDEGLOBALS="$KDE_HOME/.config/kdeglobals"
+fi
+KWRITECONFIG=""
+if command -v kwriteconfig5 >/dev/null 2>&1; then
+  KWRITECONFIG="kwriteconfig5"
+elif command -v kwriteconfig6 >/dev/null 2>&1; then
+  KWRITECONFIG="kwriteconfig6"
+fi
 
 for arg in "$@"; do
   case "$arg" in
@@ -71,10 +90,16 @@ if $ROLLBACK; then
   fi
   log "Restoring from $latest"
   if [[ -f "$latest/60-aquila.conf" ]]; then
-    run cp "$latest/60-aquila.conf.orig-missing" "$FONTCONFIG_DEST" 2>/dev/null || run rm -f "$FONTCONFIG_DEST"
+    run cp "$latest/60-aquila.conf" "$FONTCONFIG_DEST"
+  elif [[ -f "$latest/60-aquila.conf.absent" ]]; then
+    run rm -f "$FONTCONFIG_DEST"
   fi
   if [[ -f "$latest/console-setup" ]]; then
     run cp "$latest/console-setup" /etc/default/console-setup
+  fi
+  if [[ -f "$latest/kdeglobals" && -n "$KDEGLOBALS" ]]; then
+    run cp "$latest/kdeglobals" "$KDEGLOBALS"
+    run chown "$KDE_USER" "$KDEGLOBALS"
   fi
   run fc-cache -f
   log "Rollback complete. Reboot or re-login for console font to fully apply."
@@ -90,8 +115,13 @@ timestamp="$(date +%Y%m%d-%H%M%S)"
 backup_dir="$BACKUP_ROOT/$timestamp"
 if $APPLY; then
   mkdir -p "$backup_dir"
-  [[ -f "$FONTCONFIG_DEST" ]] && cp "$FONTCONFIG_DEST" "$backup_dir/60-aquila.conf"
+  if [[ -f "$FONTCONFIG_DEST" ]]; then
+    cp "$FONTCONFIG_DEST" "$backup_dir/60-aquila.conf"
+  else
+    : > "$backup_dir/60-aquila.conf.absent"
+  fi
   [[ -f /etc/default/console-setup ]] && cp /etc/default/console-setup "$backup_dir/console-setup"
+  [[ -n "$KDEGLOBALS" && -f "$KDEGLOBALS" ]] && cp "$KDEGLOBALS" "$backup_dir/kdeglobals"
   log "Backed up existing config to $backup_dir"
 fi
 
@@ -155,6 +185,23 @@ if ! $SKIP_CONSOLE; then
   fi
 else
   log "Skipping console font (--skip-console)"
+fi
+
+# --- 5. KDE Plasma: fontconfig only affects font *matching*, but Plasma
+#        writes a literal family name into kdeglobals and Qt apps request
+#        exactly that name -- so the desktop won't actually switch unless
+#        we set this too. ---
+if [[ -n "$KDE_USER" && -n "$KWRITECONFIG" ]]; then
+  log "Setting KDE Plasma fonts -> Aquila via $KWRITECONFIG (user: $KDE_USER)"
+  for key in font menuFont toolBarFont; do
+    run sudo -u "$KDE_USER" "$KWRITECONFIG" --file kdeglobals --group General --key "$key" "$AQUILA_FONT_SPEC"
+  done
+  run sudo -u "$KDE_USER" "$KWRITECONFIG" --file kdeglobals --group WM --key activeFont "$AQUILA_FONT_SPEC"
+  log "Log out and back in (or run 'plasmashell --replace &' as $KDE_USER) for Plasma to pick this up."
+elif [[ -n "$KWRITECONFIG" ]]; then
+  log "$KWRITECONFIG found but no desktop user detected (\$SUDO_USER unset) -- invoke as 'sudo ./install-aquila-font.sh --apply' from your normal login session, not from a root shell, so \$SUDO_USER is set."
+else
+  log "No kwriteconfig5/6 found -- not a KDE Plasma system (or unknown Frameworks version), skipping desktop font step"
 fi
 
 log "Done. Verify with: fc-match sans-serif   (should resolve to Aquila or Atkinson Hyperlegible)"

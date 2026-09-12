@@ -1,13 +1,12 @@
 # Aquila font on the ROCK 5B
 
-This session has no network path to the physical board, so this can't be applied remotely — copy these three files over and run the script on the device itself.
+Confirmed setup: Radxa OS 26.01, KDE Plasma 5.27.5 (KDE Frameworks 5.103, Qt 5.15.8), Wayland, RK3588. This session has no network path to the physical board, so this can't be applied remotely — copy these files over and run the script on the device itself.
 
 ## What this changes
 
-- **GUI apps** (GTK/Qt/Electron/browser, if this box runs a desktop or a kiosk display): system-wide `sans-serif` default via fontconfig → Aquila (if you supply it) → Atkinson Hyperlegible → Lexend.
-- **Console/TTY** (if you ever look at the physical display or serial console directly): switches to Terminus 16x32 — the closest console-world equivalent, chosen for large size and glyphs that don't get confused with each other (0/O, 1/l/I), which is the console-font analogue of what Aquila does for GUI text.
-
-If this board is headless-only (SSH/serial, no physical display ever used), the console-font part is a no-op you can skip with `--skip-console` — your terminal emulator's font is a client-side setting on whatever machine you SSH *from*, not something this script can reach.
+- **KDE Plasma desktop** (`kdeglobals`): sets the actual "General font", "Menu font", "Toolbar font", and window-title font Plasma tells Qt apps to use → `Aquila` (resolved via fontconfig, so it falls through to Atkinson Hyperlegible/Lexend if you haven't supplied the real Aquila font file). Fontconfig aliasing alone isn't enough here — Plasma writes a literal family name into `kdeglobals` and Qt requests exactly that name, so this step is what actually makes the desktop change, not just what's available to it.
+- **GUI apps generally** (GTK apps, Electron, browsers, anything else that goes through fontconfig): system-wide `sans-serif` default → Aquila → Atkinson Hyperlegible → Lexend.
+- **Console/TTY** (only matters if you plug in a monitor/keyboard directly or use the serial console — not your SSH terminal, which is a client-side setting on whichever machine you're SSHing *from*): switches to Terminus 16x32, chosen for large size and glyphs that don't get confused with each other (0/O, 1/l/I). Skip with `--skip-console` since this is a desktop system and you're likely never on the physical console.
 
 ## Steps
 
@@ -25,12 +24,15 @@ cd /tmp/aquila-font
 # see what it would do first -- this makes no changes
 ./install-aquila-font.sh
 
-# apply it
-sudo ./install-aquila-font.sh --apply
+# apply it -- run via sudo from your normal login session (not a root
+# shell) so $SUDO_USER is set and the KDE step knows whose kdeglobals to edit
+sudo ./install-aquila-font.sh --apply --skip-console
 
 # verify
-fc-match sans-serif      # should print Aquila or AtkinsonHyperlegible
-showconsolefont          # if console font was changed
+fc-match sans-serif                                  # should print Aquila or AtkinsonHyperlegible
+kreadconfig5 --file kdeglobals --group General --key font   # should print the Aquila,... spec
+
+# log out and back in (or: plasmashell --replace &) for Plasma to pick it up
 
 # undo if needed
 sudo ./install-aquila-font.sh --rollback
