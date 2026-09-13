@@ -6,10 +6,11 @@ n8n HTTP Request node — something to POST to without standing up n8n itself.
 Uses only the standard library; httpx is a client, not a server, so it has no
 role here.
 
-CORS allows any origin (the userscript runs on whatever page you're browsing),
-so every POST /bil must also carry a matching X-BIL-Token header. Without that,
-an unauthenticated wildcard-CORS endpoint would let any webpage you happen to
-have open silently query this service.
+CORS reflects whatever Origin a request sends (the userscript runs on
+whatever page you're browsing, so there's no fixed allow-list), but every
+POST /bil must also carry a matching X-BIL-Token header — that's the actual
+gate, since CORS headers alone can't stop a page from making the request in
+the first place.
 
 Run:
     python3 server.py
@@ -40,7 +41,13 @@ AUTH_TOKEN = os.environ.get("BIL_AUTH_TOKEN") or secrets.token_urlsafe(32)
 
 class BILRequestHandler(BaseHTTPRequestHandler):
     def _cors(self) -> None:
-        self.send_header("Access-Control-Allow-Origin", "*")
+        # Reflect the request's own Origin rather than a "*" wildcard: the
+        # userscript needs to call in from whatever page is open, but the
+        # X-BIL-Token check below is the actual gate, not this header.
+        origin = self.headers.get("Origin")
+        if origin:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, X-BIL-Token")
 
