@@ -6,18 +6,28 @@ n8n HTTP Request node — something to POST to without standing up n8n itself.
 Uses only the standard library; httpx is a client, not a server, so it has no
 role here.
 
+CORS allows any origin (the userscript runs on whatever page you're browsing),
+so every POST /bil must also carry a matching X-BIL-Token header. Without that,
+an unauthenticated wildcard-CORS endpoint would let any webpage you happen to
+have open silently query this service.
+
 Run:
     python3 server.py
+    # BIL webhook server listening on http://127.0.0.1:8787/bil
+    # Auth token (set via the userscript's 'Set BIL token' menu command): <token>
 
 Then:
     curl -X POST http://127.0.0.1:8787/bil \\
         -H 'Content-Type: application/json' \\
+        -H 'X-BIL-Token: <token>' \\
         -d '{"input_type": "english", "input_text": "Fix the code."}'
 """
 
 from __future__ import annotations
 
 import json
+import os
+import secrets
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Dict
 
@@ -25,13 +35,14 @@ from bil_v07_interpreter import n8n_handle
 
 HOST = "127.0.0.1"
 PORT = 8787
+AUTH_TOKEN = os.environ.get("BIL_AUTH_TOKEN") or secrets.token_urlsafe(32)
 
 
 class BILRequestHandler(BaseHTTPRequestHandler):
     def _cors(self) -> None:
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-BIL-Token")
 
     def _json(self, status: int, body: Dict[str, object]) -> None:
         payload = json.dumps(body).encode("utf-8")
@@ -51,6 +62,10 @@ class BILRequestHandler(BaseHTTPRequestHandler):
             self._json(404, {"ok": False, "error": "not found"})
             return
 
+        if not secrets.compare_digest(self.headers.get("X-BIL-Token", ""), AUTH_TOKEN):
+            self._json(401, {"ok": False, "error": "missing or invalid X-BIL-Token"})
+            return
+
         length = int(self.headers.get("Content-Length", 0))
         raw = self.rfile.read(length) if length else b"{}"
         try:
@@ -68,6 +83,7 @@ class BILRequestHandler(BaseHTTPRequestHandler):
 def main() -> None:
     server = ThreadingHTTPServer((HOST, PORT), BILRequestHandler)
     print(f"BIL webhook server listening on http://{HOST}:{PORT}/bil")
+    print(f"Auth token (set via the userscript's 'Set BIL token' menu command): {AUTH_TOKEN}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

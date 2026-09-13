@@ -21,9 +21,21 @@
     return GM_getValue('bilEndpoint', DEFAULT_ENDPOINT);
   }
 
+  function token() {
+    return GM_getValue('bilToken', '');
+  }
+
   GM_registerMenuCommand('Set BIL endpoint', () => {
     const next = window.prompt('BIL webhook endpoint:', endpoint());
     if (next) GM_setValue('bilEndpoint', next);
+  });
+
+  GM_registerMenuCommand('Set BIL token', () => {
+    const next = window.prompt(
+      'BIL auth token (printed by server.py on startup):',
+      token()
+    );
+    if (next !== null) GM_setValue('bilToken', next);
   });
 
   let panel = null;
@@ -81,13 +93,20 @@
     GM_xmlhttpRequest({
       method: 'POST',
       url: endpoint(),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-BIL-Token': token() },
       data: JSON.stringify({
         thread_id: 'userscript',
         input_type: 'english',
         input_text: text,
       }),
       onload: (res) => {
+        if (res.status === 401) {
+          showPanel(anchorRect, {
+            ok: false,
+            error: "Missing or invalid token — set it via the Tampermonkey menu ('Set BIL token').",
+          });
+          return;
+        }
         let parsed;
         try {
           parsed = JSON.parse(res.responseText);

@@ -160,13 +160,17 @@ Each function opens a short-lived `httpx.Client` with explicit connect/read/writ
 ```bash
 python3 server.py
 # BIL webhook server listening on http://127.0.0.1:8787/bil
+# Auth token (set via the userscript's 'Set BIL token' menu command): <token>
 
 curl -X POST http://127.0.0.1:8787/bil \
     -H 'Content-Type: application/json' \
+    -H 'X-BIL-Token: <token>' \
     -d '{"input_type": "english", "input_text": "Fix the code."}'
 ```
 
-`userscript/bil-helper.user.js` is a Tampermonkey/Violentmonkey script: select text on any page, press **Alt+B**, and it POSTs the selection to the server above and shows the output text + BIL tokens in a small overlay next to your selection. The endpoint defaults to `http://127.0.0.1:8787/bil` and is configurable via the script's Tampermonkey menu command ("Set BIL endpoint").
+CORS allows any origin (the userscript runs on whatever page you're browsing), so every request must also carry the `X-BIL-Token` header printed at startup (or set via `BIL_AUTH_TOKEN`) — otherwise any webpage you had open could silently query the endpoint.
+
+`userscript/bil-helper.user.js` is a Tampermonkey/Violentmonkey script: select text on any page, press **Alt+B**, and it POSTs the selection to the server above and shows the output text + BIL tokens in a small overlay next to your selection. The endpoint defaults to `http://127.0.0.1:8787/bil` and both it and the auth token are configurable via the script's Tampermonkey menu commands ("Set BIL endpoint" / "Set BIL token").
 
 ---
 
