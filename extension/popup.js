@@ -7,20 +7,30 @@ async function load() {
     'bilEndpoint',
     'bilToken',
   ]);
-  document.getElementById('endpoint').value = bilEndpoint || DEFAULT_ENDPOINT;
-  document.getElementById('token').value = bilToken || '';
+  const endpointInput = document.getElementById('endpoint');
+  const tokenInput = document.getElementById('token');
+  if (endpointInput) endpointInput.value = bilEndpoint || DEFAULT_ENDPOINT;
+  if (tokenInput) tokenInput.value = bilToken || '';
 }
 
-document.getElementById('save').addEventListener('click', async () => {
-  const endpoint = document.getElementById('endpoint').value.trim() || DEFAULT_ENDPOINT;
-  const token = document.getElementById('token').value.trim();
+async function save() {
+  const endpointInput = document.getElementById('endpoint');
+  const tokenInput = document.getElementById('token');
+  const statusEl = document.getElementById('status');
+
+  const endpoint = (endpointInput ? endpointInput.value.trim() : '') || DEFAULT_ENDPOINT;
+  const token = tokenInput ? tokenInput.value.trim() : '';
   await browser.storage.local.set({ bilEndpoint: endpoint, bilToken: token });
 
-  const status = document.getElementById('status');
-  status.textContent = 'Saved.';
-  setTimeout(() => {
-    status.textContent = '';
-  }, 1500);
-});
+  if (statusEl) {
+    statusEl.textContent = 'Saved.';
+    setTimeout(() => {
+      statusEl.textContent = '';
+    }, 1500);
+  }
+}
+
+const saveButton = document.getElementById('save');
+if (saveButton) saveButton.addEventListener('click', save);
 
 load();
