@@ -172,6 +172,12 @@ CORS allows any origin (the userscript runs on whatever page you're browsing), s
 
 `userscript/bil-helper.user.js` is a Tampermonkey/Violentmonkey script: select text on any page, press **Alt+B**, and it POSTs the selection to the server above and shows the output text + BIL tokens in a small overlay next to your selection. The endpoint defaults to `http://127.0.0.1:8787/bil` and both it and the auth token are configurable via the script's Tampermonkey menu commands ("Set BIL endpoint" / "Set BIL token").
 
+### `extension/` — native FireDragon/Firefox extension
+
+FireDragon is a Firefox fork, so the userscript above already works there via Violentmonkey. `extension/` is a dedicated WebExtension instead, for anyone who'd rather not run a userscript manager: same Alt+B → selection → overlay behavior, but built with `fetch`/`browser.storage` (a content script has no `GM_*` APIs) and a toolbar popup (`popup.html`/`popup.js`) in place of Tampermonkey's menu commands for setting the endpoint and token.
+
+Load unpacked in FireDragon/Firefox via `about:debugging` → "This Firefox" → "Load Temporary Add-on" → select `extension/manifest.json`, then click the toolbar icon to set the endpoint/token printed by `server.py`.
+
 ---
 
 ## Status
