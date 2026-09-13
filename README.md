@@ -151,6 +151,8 @@ forward_to_n8n(webhook_url, n8n_handle(payload))  # relay a round-trip result to
 
 Each function opens a short-lived `httpx.Client` with explicit connect/read/write/pool timeouts and raises on non-2xx responses — there's no retry/backoff logic yet (see `plan.md`'s rate-limit notes for what that should look like).
 
+`call_openai`/`call_claude` go through `_secure_client()`, which pins TLS to a **1.3 minimum** and negotiates **HTTP/2** (falls back to 1.1 if a hop doesn't support it) — both are fixed, known-good HTTPS endpoints. `forward_to_n8n` deliberately stays on the plain client instead, since n8n webhook URLs are user-supplied and sometimes plain HTTP on a local network; forcing TLS 1.3 there would break that. Requires the `h2` package (`pip install -r requirements.txt` pulls it via the `httpx[http2]` extra).
+
 ---
 
 ## Local Server + Browser Userscript

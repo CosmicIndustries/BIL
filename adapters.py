@@ -10,11 +10,23 @@ independent and stateless.
 from __future__ import annotations
 
 import os
+import ssl
 from typing import Any, Dict, Optional
 
 import httpx
 
 DEFAULT_TIMEOUT = httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0)
+
+# OpenAI/Claude are fixed, known-HTTPS/HTTP2-capable endpoints, so pin them to
+# TLS 1.3 and negotiate HTTP/2 (falls back to 1.1 if a hop doesn't support it).
+# n8n webhooks are user-supplied and sometimes plain-HTTP on a local network,
+# so forward_to_n8n deliberately stays on the plain client below instead.
+_TLS_CONTEXT = ssl.create_default_context()
+_TLS_CONTEXT.minimum_version = ssl.TLSVersion.TLSv1_3
+
+
+def _secure_client() -> httpx.Client:
+    return httpx.Client(timeout=DEFAULT_TIMEOUT, http2=True, verify=_TLS_CONTEXT)
 
 
 def _require_key(api_key: Optional[str], env_var: str) -> str:
@@ -32,7 +44,7 @@ def call_openai(
 ) -> Dict[str, Any]:
     """Send a BIL token stream to OpenAI's Chat Completions API."""
     key = _require_key(api_key, "OPENAI_API_KEY")
-    with httpx.Client(timeout=DEFAULT_TIMEOUT) as client:
+    with _secure_client() as client:
         response = client.post(
             f"{base_url}/chat/completions",
             headers={"Authorization": f"Bearer {key}"},
@@ -54,7 +66,7 @@ def call_claude(
 ) -> Dict[str, Any]:
     """Send a BIL token stream to Anthropic's Messages API."""
     key = _require_key(api_key, "ANTHROPIC_API_KEY")
-    with httpx.Client(timeout=DEFAULT_TIMEOUT) as client:
+    with _secure_client() as client:
         response = client.post(
             f"{base_url}/messages",
             headers={
