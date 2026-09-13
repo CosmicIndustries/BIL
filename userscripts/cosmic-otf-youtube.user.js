@@ -305,15 +305,6 @@
     }
 
 
-    function dbToGain(db) {
-
-        return Math.pow(
-            10,
-            db / 20
-        );
-    }
-
-
     // Dotted-path reader/writer over CFG, e.g. getPath('audio.eq.b80').
     // Lets slider markup declare `data-key="audio.eq.b80"` once and
     // have both binding and persistence "just work".
@@ -925,12 +916,6 @@ extends AudioWorkletProcessor {
             0;
 
         this.previousR =
-            0;
-
-        this.previousL2 =
-            0;
-
-        this.previousR2 =
             0;
 
         this.historyL =
