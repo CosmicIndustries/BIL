@@ -59,6 +59,11 @@
 
   function wireAltBShortcut(runBIL) {
     document.addEventListener('keydown', (e) => {
+      // Reject synthetic events: a page's own script can otherwise dispatch
+      // a fake keydown (with getSelection() pre-populated) to make this fire
+      // runBIL with attacker-chosen text using the extension/userscript's
+      // own stored token, then read the result back out of the DOM.
+      if (!e.isTrusted) return;
       if (!(e.altKey && e.key.toLowerCase() === 'b')) return;
       const selection = window.getSelection();
       const text = selection ? selection.toString().trim() : '';
