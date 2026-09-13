@@ -54,7 +54,7 @@
      * The control panel is hidden by default so it never gets in
      * the way of normal viewing. It can be summoned three ways:
      *
-     *   1. Alt+Shift+O  — toggles the panel open/closed.
+     *   1. Alt+Shift+P  — toggles the panel open/closed.
      *   2. Alt+Shift+U  — toggles master bypass (processing on/off)
      *                     without opening the panel.
      *   3. A small floating "OTF" launcher pill, always present in
@@ -2819,7 +2819,7 @@ void main() {
         none;
 }
 
-/* Hidden by default; toggled via the launcher pill, Alt+Shift+O,
+/* Hidden by default; toggled via the launcher pill, Alt+Shift+P,
    or opened automatically the first time the script boots if the
    user previously left it open. */
 #cosmic-otf.cotf-hidden {
@@ -3538,7 +3538,7 @@ void main() {
                     <span
                         class="cotf-close"
                         data-close-panel
-                        title="Close panel (Alt+Shift+O)"
+                        title="Close panel (Alt+Shift+P)"
                     >
                         ✕
                     </span>
@@ -3927,7 +3927,7 @@ void main() {
                 </div>
 
                 <div style="margin-top:6px;color:#555">
-                    Alt+Shift+O toggles this panel ·
+                    Alt+Shift+P toggles this panel ·
                     Alt+Shift+U toggles processing
                 </div>
 
@@ -3971,7 +3971,7 @@ void main() {
             'OTF';
 
         launcher.title =
-            'Open Cosmic OTF settings (Alt+Shift+O)';
+            'Open Cosmic OTF settings (Alt+Shift+P)';
 
         launcher.addEventListener(
             'click',
@@ -4719,13 +4719,15 @@ void main() {
             'keydown',
             event => {
 
-                // Alt+Shift+O — open/close the settings panel.
+                // Alt+Shift+P — open/close the settings panel.
                 // This is the primary "invoke the UI" shortcut; it
-                // does not touch processing itself.
+                // does not touch processing itself. (Not "O" —
+                // that's already bound to a cache-cleaner extension
+                // for some users.)
                 if (
                     event.altKey &&
                     event.shiftKey &&
-                    event.code === 'KeyO'
+                    event.code === 'KeyP'
                 ) {
 
                     event.preventDefault();
@@ -4808,7 +4810,7 @@ void main() {
         monitorPlayer();
 
         log(
-            `Cosmic OTF v${VERSION} loaded — Alt+Shift+O opens the panel, Alt+Shift+U toggles processing`
+            `Cosmic OTF v${VERSION} loaded — Alt+Shift+P opens the panel, Alt+Shift+U toggles processing`
         );
     }
 
