@@ -64,7 +64,12 @@
       const text = selection ? selection.toString().trim() : '';
       if (!text || !selection.rangeCount) return;
       const range = selection.getRangeAt(0);
-      runBIL(text, range.getBoundingClientRect());
+      // runBIL may be sync (userscript, GM_xmlhttpRequest-based) or async
+      // (extension, fetch-based); Promise.resolve(...).catch(...) handles
+      // both without leaving a floating/unhandled rejection either way.
+      Promise.resolve(runBIL(text, range.getBoundingClientRect())).catch((err) => {
+        console.error('BIL Helper: runBIL failed', err);
+      });
     });
 
     document.addEventListener('mousedown', (e) => {

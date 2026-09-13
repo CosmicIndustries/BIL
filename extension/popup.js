@@ -31,6 +31,10 @@ async function save() {
 }
 
 const saveButton = document.getElementById('save');
-if (saveButton) saveButton.addEventListener('click', save);
+if (saveButton) {
+  saveButton.addEventListener('click', () => {
+    save().catch((err) => console.error('BIL Helper: save failed', err));
+  });
+}
 
-load();
+load().catch((err) => console.error('BIL Helper: load failed', err));
