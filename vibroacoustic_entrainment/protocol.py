@@ -34,6 +34,31 @@ plateau paired with a strong, rhythmic full-body sensory pulse as the reported
 trigger for the "vibrations"/"rollout" experience. Treat protocol names like
 ``hyper_cognition_obe_phase_protocol`` as an engineering label for that plateau shape,
 not a claim that the state it targets is verified to occur or to be beneficial.
+
+Three further protocols extend this beyond the core Gateway descent:
+
+* ``focus21_extended_bridge`` — Monroe's own material and the declassified CIA
+  Gateway report describe Focus 21 only qualitatively ("The Bridge", a state
+  further removed from ordinary consciousness with no time-bound frequency
+  given). This protocol is this project's own speculative extrapolation past
+  Focus 15 into a brief deep-delta trough and back — clearly a guess beyond any
+  public source, not a reconstruction of anything Monroe specified.
+* ``lucia_hypnagogic`` — modeled on the *publicly described operating pattern*
+  of the Lucia N°03 stroboscope (Proeckl & Winkler): a light-forward session
+  that steps through a handful of fixed frequencies rather than one continuous
+  descent, commonly reported in coverage of the device as roughly 3 Hz (delta),
+  6 Hz (theta), 10 Hz (alpha) and higher bands, holding briefly at each before
+  moving on. Meant to be run with a photic-forward ``SessionConfig``
+  (``photic_enabled=True``, audio kept low/off) — this project has no
+  affiliation with Light Attendance GmbH and does not reproduce their device's
+  actual signal chain.
+* ``vibroacoustic_relaxation`` — a non-altered-state, therapy-style session
+  grounded in Olav Skille's Physioacoustic Method and the applications
+  reviewed in Boyd-Brewer & Punzi's 2005 vibroacoustic-therapy literature
+  review (muscle relaxation, pain and anxiety reduction): a long, flat alpha
+  hold rather than a theta/delta descent, meant to be run haptic-forward
+  (higher ``haptic_amplitude``) with the audio/photic channels as secondary
+  accompaniment, not the point of the session.
 """
 
 from __future__ import annotations
@@ -237,10 +262,97 @@ def hyper_cognition_obe_phase_protocol(carrier_hz: float = 200.0) -> Protocol:
     )
 
 
+def focus21_extended_bridge(carrier_hz: float = 200.0) -> Protocol:
+    """Speculative extension past Focus 15 into a brief deep-delta trough and back.
+
+    Monroe's own descriptions of Focus 21 ("The Bridge") give no canonical
+    frequency, so this is an engineering guess at what "further removed, still
+    reversible" might look like as a schedule shape: dip below the Focus 15
+    floor into slow delta, hold briefly, then bridge back up toward alpha
+    rather than ending on a low plateau (unlike ``obe_phase``, which is built
+    to hold the state). Chains after the full Focus 10/12/15 descent.
+    """
+    gateway = gateway_full_progression(carrier_hz=carrier_hz)
+    trough = Stage("focus21_trough", 300.0, 2.0, 1.0, "Speculative deep-delta dip past the Focus 15 floor.")
+    hold = Stage("focus21_hold", 240.0, 1.0, 1.0, "Brief hold at the trough.")
+    bridge_back = Stage("focus21_bridge_back", 360.0, 1.0, 8.0, "Bridge back up toward alpha.")
+    return Protocol(
+        name="focus21_extended_bridge",
+        carrier_hz=carrier_hz,
+        description=(
+            "Speculative extension past Focus 15: a brief deep-delta trough and a "
+            "bridge back to alpha. Not sourced from any public Focus 21 frequency "
+            "(none is given) — this project's own guess at the schedule shape."
+        ),
+        stages=gateway.stages + (trough, hold, bridge_back),
+    )
+
+
+def lucia_hypnagogic(carrier_hz: float = 200.0) -> Protocol:
+    """Stepped multi-band schedule modeled on Lucia N°03's publicly described presets.
+
+    Rather than one continuous descent, steps through delta, theta, alpha and a
+    higher band with a short ramp and hold at each — meant to be paired with a
+    photic-forward ``SessionConfig`` (light channel is the point; audio/haptic
+    are secondary). Not a reproduction of the Lucia N°03 device's actual signal
+    chain, which is proprietary.
+    """
+    return Protocol(
+        name="lucia_hypnagogic",
+        carrier_hz=carrier_hz,
+        description=(
+            "Photic-forward stepped session modeled on Lucia N°03's publicly "
+            "reported frequency presets (delta -> theta -> alpha -> higher band), "
+            "for hypnagogic-imagery exploration under closed eyelids."
+        ),
+        stages=(
+            Stage("lucia_settle", 60.0, 10.0, 10.0, "Eyes closed, settle with the light on."),
+            Stage("lucia_ramp_delta", 60.0, 10.0, 3.0, "Ramp down toward the delta preset."),
+            Stage("lucia_delta_hold", 180.0, 3.0, 3.0, "Hold at ~3 Hz (delta preset)."),
+            Stage("lucia_ramp_theta", 45.0, 3.0, 6.0, "Ramp up toward the theta preset."),
+            Stage("lucia_theta_hold", 180.0, 6.0, 6.0, "Hold at ~6 Hz (theta preset)."),
+            Stage("lucia_ramp_alpha", 45.0, 6.0, 10.0, "Ramp up toward the alpha preset."),
+            Stage("lucia_alpha_hold", 180.0, 10.0, 10.0, "Hold at ~10 Hz (alpha preset)."),
+            Stage("lucia_ramp_high", 45.0, 10.0, 18.0, "Ramp up into a higher, more alerting band."),
+            Stage("lucia_high_hold", 120.0, 18.0, 18.0, "Hold at ~18 Hz before closing out."),
+            Stage("lucia_return", 90.0, 18.0, 10.0, "Return to alpha to close the session."),
+        ),
+    )
+
+
+def vibroacoustic_relaxation(carrier_hz: float = 100.0) -> Protocol:
+    """Long, flat alpha hold for haptic-forward physical relaxation (Skille-style).
+
+    Unlike the Gateway/OBE protocols, this is not trying to descend into
+    theta/delta or induce an altered state — it targets the same relaxed-alpha
+    band the whole session through, so the vibroacoustic tactile channel (run
+    with a higher ``haptic_amplitude``) is doing the work described in Skille's
+    Physioacoustic Method and the applications literature (muscle relaxation,
+    pain and anxiety reduction), with audio/photic as light accompaniment.
+    """
+    return Protocol(
+        name="vibroacoustic_relaxation",
+        carrier_hz=carrier_hz,
+        description=(
+            "Haptic-forward flat-alpha relaxation session (Skille Physioacoustic "
+            "Method style) — run with a higher haptic_amplitude; not a theta/delta "
+            "descent and not aimed at an altered state."
+        ),
+        stages=(
+            Stage("relax_settle", 120.0, 10.0, 10.0, "Settle in; let the tactile pulse take over."),
+            Stage("relax_hold", 1080.0, 10.0, 10.0, "Extended relaxed-alpha hold."),
+            Stage("relax_ease_out", 120.0, 10.0, 10.0, "Ease out; stay flat, just wind down attention."),
+        ),
+    )
+
+
 PROTOCOLS = {
     "focus10": gateway_focus10,
     "focus12": gateway_focus12,
     "focus15": gateway_focus15,
     "gateway": gateway_full_progression,
     "obe_phase": hyper_cognition_obe_phase_protocol,
+    "focus21_bridge": focus21_extended_bridge,
+    "lucia_hypnagogic": lucia_hypnagogic,
+    "vibroacoustic_relaxation": vibroacoustic_relaxation,
 }

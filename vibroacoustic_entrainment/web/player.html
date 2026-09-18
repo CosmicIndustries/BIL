@@ -571,6 +571,65 @@
     return makeProtocol("hyper_cognition_obe_phase_protocol", [...f10.stages, ...f12.stages, bridge, plateau], carrier_hz,
       "Focus 10 -> 12 -> extended 4 Hz theta plateau, modeled on OBE-induction literature's 'hold the vibrational stage' instruction. Experiential target, not a validated neuroscience protocol.");
   }
+  function focus21ExtendedBridge(carrier_hz) {
+    carrier_hz = carrier_hz || 200;
+    const gw = gatewayFull(carrier_hz);
+    const trough = stage("focus21_trough", 300, 2.0, 1.0, "Speculative deep-delta dip past the Focus 15 floor.", [
+      { frac: 0.0, text: "There's no map past this point — just keep breathing and let the descent continue." },
+      { frac: 0.6, text: "This is speculative territory. Stay curious, not anxious." },
+    ]);
+    const hold = stage("focus21_hold", 240, 1.0, 1.0, "Brief hold at the trough.", [
+      { frac: 0.2, text: "Rest here briefly. Nothing further to reach for." },
+    ]);
+    const bridgeBack = stage("focus21_bridge_back", 360, 1.0, 8.0, "Bridge back up toward alpha.", [
+      { frac: 0.0, text: "We're bridging back now. Let the frequency rise carry you gently upward." },
+      { frac: 0.7, text: "Almost back to ordinary awareness. Take your time." },
+    ]);
+    return makeProtocol("focus21_extended_bridge", [...gw.stages, trough, hold, bridgeBack], carrier_hz,
+      "Speculative extension past Focus 15: a brief deep-delta trough and a bridge back to alpha. Not sourced from any public Focus 21 frequency (none is given) — this project's own guess at the schedule shape.");
+  }
+  function luciaHypnagogic(carrier_hz) {
+    carrier_hz = carrier_hz || 200;
+    return makeProtocol("lucia_hypnagogic", [
+      stage("lucia_settle", 60, 10.0, 10.0, "Eyes closed, settle with the light on.", [
+        { frac: 0.0, text: "Close your eyes. Let the light play across your eyelids without trying to look at it." },
+      ]),
+      stage("lucia_ramp_delta", 60, 10.0, 3.0, "Ramp down toward the delta preset.", []),
+      stage("lucia_delta_hold", 180, 3.0, 3.0, "Hold at ~3 Hz (delta preset).", [
+        { frac: 0.1, text: "Slow, deep pulsing. Just watch whatever patterns or colors appear on their own." },
+      ]),
+      stage("lucia_ramp_theta", 45, 3.0, 6.0, "Ramp up toward the theta preset.", []),
+      stage("lucia_theta_hold", 180, 6.0, 6.0, "Hold at ~6 Hz (theta preset).", [
+        { frac: 0.1, text: "This is the hypnagogic range — the same threshold as just before falling asleep." },
+      ]),
+      stage("lucia_ramp_alpha", 45, 6.0, 10.0, "Ramp up toward the alpha preset.", []),
+      stage("lucia_alpha_hold", 180, 10.0, 10.0, "Hold at ~10 Hz (alpha preset).", [
+        { frac: 0.1, text: "Lighter now. Notice any afterimages or shapes without chasing them." },
+      ]),
+      stage("lucia_ramp_high", 45, 10.0, 18.0, "Ramp up into a higher, more alerting band.", []),
+      stage("lucia_high_hold", 120, 18.0, 18.0, "Hold at ~18 Hz before closing out.", [
+        { frac: 0.1, text: "A brighter, faster pulse to close the session out." },
+      ]),
+      stage("lucia_return", 90, 18.0, 10.0, "Return to alpha to close the session.", [
+        { frac: 0.5, text: "Settling back to alpha. When you're ready, open your eyes." },
+      ]),
+    ], carrier_hz, "Photic-forward stepped session modeled on Lucia N°03's publicly reported frequency presets (delta -> theta -> alpha -> higher band), for hypnagogic-imagery exploration under closed eyelids.");
+  }
+  function vibroacousticRelaxation(carrier_hz) {
+    carrier_hz = carrier_hz || 100;
+    return makeProtocol("vibroacoustic_relaxation", [
+      stage("relax_settle", 120, 10.0, 10.0, "Settle in; let the tactile pulse take over.", [
+        { frac: 0.0, text: "Get comfortable. This session isn't about going anywhere — just let the vibration work on the body." },
+      ]),
+      stage("relax_hold", 1080, 10.0, 10.0, "Extended relaxed-alpha hold.", [
+        { frac: 0.1, text: "Let the pulse settle into your muscles. Nothing to focus on but the sensation." },
+        { frac: 0.5, text: "If your mind wanders, that's fine — this stage is for the body, not the mind." },
+      ]),
+      stage("relax_ease_out", 120, 10.0, 10.0, "Ease out; stay flat, just wind down attention.", [
+        { frac: 0.2, text: "Easing out now. Take a few slow breaths before you move." },
+      ]),
+    ], carrier_hz, "Haptic-forward flat-alpha relaxation session (Skille Physioacoustic Method style) — run with a higher haptic amplitude; not a theta/delta descent and not aimed at an altered state.");
+  }
 
   const PROTOCOLS = {
     focus10: { build: gatewayFocus10, label: "Focus 10 — Mind Awake, Body Asleep" },
@@ -578,6 +637,9 @@
     focus15: { build: gatewayFocus15, label: "Focus 15 — No Time" },
     gateway: { build: gatewayFull, label: "Gateway — Focus 10→12→15" },
     obe_phase: { build: obePhase, label: "OBE Phase — Hyper-Cognition Plateau" },
+    focus21_bridge: { build: focus21ExtendedBridge, label: "Focus 21 — Speculative Bridge (experimental)" },
+    lucia_hypnagogic: { build: luciaHypnagogic, label: "Lucia Hypnagogic — Stepped Light Session" },
+    vibroacoustic_relaxation: { build: vibroacousticRelaxation, label: "Vibroacoustic Relaxation — Haptic-Forward" },
   };
 
   // ---- band coloring (standard EEG convention: delta 0.5-4, theta 4-8, alpha 8-13, beta 13+) ----

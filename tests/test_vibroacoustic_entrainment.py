@@ -13,9 +13,12 @@ from vibroacoustic_entrainment import (
     Protocol,
     SessionConfig,
     Stage,
+    focus21_extended_bridge,
     gateway_focus10,
     hyper_cognition_obe_phase_protocol,
+    lucia_hypnagogic,
     render_session,
+    vibroacoustic_relaxation,
 )
 from vibroacoustic_entrainment import oscillators, haptic, photic
 from vibroacoustic_entrainment.safety import EntrainmentSafetyError, check_photic_safety
@@ -81,6 +84,27 @@ class ProtocolTests(unittest.TestCase):
         plateau = [s for s in protocol.stages if s.name == "phase_plateau"][0]
         self.assertEqual(plateau.freq_start, plateau.freq_end)
         self.assertGreaterEqual(plateau.duration_s, 600.0)
+
+    def test_focus21_bridge_dips_below_focus15_floor_and_returns(self):
+        protocol = focus21_extended_bridge()
+        trough = [s for s in protocol.stages if s.name == "focus21_trough"][0]
+        self.assertLess(trough.freq_end, 2.0)
+        # last stage should bridge back up toward alpha, not end on the trough
+        self.assertGreater(protocol.stages[-1].freq_end, protocol.stages[-1].freq_start)
+
+    def test_lucia_hypnagogic_steps_through_named_band_holds(self):
+        protocol = lucia_hypnagogic()
+        holds = {s.name: s.freq_start for s in protocol.stages if s.name.endswith("_hold")}
+        self.assertAlmostEqual(holds["lucia_delta_hold"], 3.0)
+        self.assertAlmostEqual(holds["lucia_theta_hold"], 6.0)
+        self.assertAlmostEqual(holds["lucia_alpha_hold"], 10.0)
+
+    def test_vibroacoustic_relaxation_stays_flat_alpha(self):
+        protocol = vibroacoustic_relaxation()
+        for s in protocol.stages:
+            self.assertAlmostEqual(s.freq_start, 10.0)
+            self.assertAlmostEqual(s.freq_end, 10.0)
+        self.assertGreaterEqual(protocol.total_duration, 1200.0)
 
 
 class OscillatorTests(unittest.TestCase):

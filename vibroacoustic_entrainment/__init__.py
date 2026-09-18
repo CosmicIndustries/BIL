@@ -37,6 +37,9 @@ from .protocol import (
     gateway_focus15,
     gateway_full_progression,
     hyper_cognition_obe_phase_protocol,
+    focus21_extended_bridge,
+    lucia_hypnagogic,
+    vibroacoustic_relaxation,
 )
 from .session import SessionConfig, render_session, collect_safety_warnings
 from .safety import EntrainmentSafetyError
@@ -50,6 +53,9 @@ __all__ = [
     "gateway_focus15",
     "gateway_full_progression",
     "hyper_cognition_obe_phase_protocol",
+    "focus21_extended_bridge",
+    "lucia_hypnagogic",
+    "vibroacoustic_relaxation",
     "SessionConfig",
     "render_session",
     "collect_safety_warnings",

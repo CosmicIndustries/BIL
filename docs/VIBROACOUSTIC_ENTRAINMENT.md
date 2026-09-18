@@ -37,6 +37,12 @@ The declassified 1983 CIA report *"Analysis and Assessment of Gateway Process"*
 (released under FOIA) is a useful public account of the program's theoretical
 framing; it is not a technical specification of Hemi-Sync's DSP.
 
+Because Focus 21 has no public canonical frequency at all, `focus21_extended_bridge()`
+is flagged separately from the three above: it chains the full Focus 10→12→15
+descent and then adds a **speculative** deep-delta trough-and-return that is this
+project's own guess at a schedule shape for "further removed, still reversible" —
+not a claim about what Focus 21 actually is.
+
 ### Binaural beats, monaural beats, isochronic tones
 
 * **Binaural beat** — two slightly-detuned pure tones, one per ear. The beat
@@ -58,7 +64,12 @@ most often as the best-tolerated default for relaxation and reduced muscle
 tension/spasticity. That characterized range is where this package's
 `haptic.DEFAULT_TACTILE_CARRIER_HZ = 40.0` and `safety.VIBROACOUSTIC_RECOMMENDED_BAND
 = (30.0, 120.0)` come from. Modern vibroacoustic chairs/mats and Monroe's own "CHEC
-unit" cushion are the same class of hardware this channel is meant to drive.
+unit" cushion are the same class of hardware this channel is meant to drive. A later
+review by Boyd-Brewer & Punzi (2005, *Holistic Nursing Practice*) surveys applications
+of vibroacoustic therapy for muscle relaxation, pain, and anxiety reduction — the
+grounding for `protocol.vibroacoustic_relaxation()`, a flat-alpha, haptic-forward
+session (no theta/delta descent, not aimed at an altered state) meant to be run with
+a higher `haptic_amplitude` than the Gateway/OBE protocols.
 
 ### Audio-visual entrainment and hypnagogic light machines (the photic channel)
 
@@ -72,6 +83,13 @@ meditation, and (per its own marketing and user reports) OBE-adjacent experience
 Photic driving — an EEG-measurable response time-locked to a flicker's frequency — is
 real and well documented; whether it reliably produces a subjectively meaningful
 altered state, let alone an OBE, is not.
+
+`protocol.lucia_hypnagogic()` models Lucia N°03's publicly reported *operating
+pattern* — stepping through a handful of fixed frequencies (roughly delta, theta,
+alpha, then a higher band) with a hold at each, rather than one continuous descent —
+as a photic-forward session (pair it with `photic_enabled=True` and low/no audio in
+`SessionConfig`). It does not reproduce the device's actual signal chain, which is
+proprietary to Light Attendance GmbH, and this project has no affiliation with them.
 
 ### OBE / "phasing" induction literature
 
@@ -124,7 +142,10 @@ manifest = render_session(protocol, SessionConfig(audio_mode="isochronic"), "out
 ```
 
 Available `--protocol` values: `focus10`, `focus12`, `focus15`, `gateway` (chained
-10→12→15), `obe_phase` (10→12→extended theta plateau).
+10→12→15), `obe_phase` (10→12→extended theta plateau), `focus21_bridge`
+(gateway→speculative deep-delta trough→bridge back to alpha), `lucia_hypnagogic`
+(photic-forward stepped delta→theta→alpha→higher band), `vibroacoustic_relaxation`
+(flat alpha, haptic-forward, non-altered-state).
 
 ## Disclaimers & safety
 
