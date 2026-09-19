@@ -1,0 +1,84 @@
+{
+  "name": "Aquila",
+  "version": "0.1.0",
+  "description": "Accessible, ADHD- and dyslexia-friendly design tokens for the BIL/SANd-X ecosystem. Import into any app to keep visual and accessibility behavior consistent.",
+  "color": {
+    "dark": {
+      "bg": "#060A12",
+      "surface": "#0B1420",
+      "surfaceAlt": "#10283C",
+      "border": "#1B3A4B",
+      "accent": "#22D3EE",
+      "accentText": "#7FE7F5",
+      "text": "#F2FBFF",
+      "textMuted": "#9FB8C6",
+      "focus": "#FFD166",
+      "danger": "#FF8A8A",
+      "success": "#5EEAD4"
+    },
+    "light": {
+      "bg": "#FBFEFF",
+      "surface": "#EFF7FA",
+      "surfaceAlt": "#DCEEF3",
+      "border": "#B8D3DC",
+      "accent": "#0F7C99",
+      "accentText": "#0B5C73",
+      "text": "#0A1620",
+      "textMuted": "#3E5A66",
+      "focus": "#B8590A",
+      "danger": "#B3261E",
+      "success": "#0F7A5F"
+    },
+    "_contrastNotes": "Ratios computed against WCAG 2.1 relative-luminance formula, not eyeballed. Dark theme: text/bg ~18.9:1, accentText/bg ~13.8:1, textMuted/bg ~9.6:1 -- all exceed AAA (7:1) for normal text. accent (#22D3EE) is reserved for large text/icons/borders (AA graphics threshold, 3:1) since it is calibrated for punch, not body copy."
+  },
+  "typography": {
+    "fontPrimary": "'Aquila', 'Atkinson Hyperlegible', 'Lexend', system-ui, sans-serif",
+    "fontDyslexic": "'OpenDyslexic', 'Atkinson Hyperlegible', 'Aquila', system-ui, sans-serif",
+    "fontMono": "'Aquila Mono', 'JetBrains Mono', ui-monospace, monospace",
+    "lineHeight": 1.6,
+    "lineHeightDyslexic": 1.8,
+    "letterSpacing": "0.01em",
+    "letterSpacingDyslexic": "0.03em",
+    "wordSpacing": "0.06em",
+    "wordSpacingDyslexic": "0.12em",
+    "measure": "70ch",
+    "scale": {
+      "sm": "0.875rem",
+      "base": "1rem",
+      "lg": "1.25rem",
+      "xl": "1.75rem",
+      "2xl": "2.5rem"
+    },
+    "_notes": "'Aquila' is the brand typeface; ship it via self-hosted @font-face when the font file/license is available. Until then, and always as a safety net, fall back to Atkinson Hyperlegible and Lexend -- both independently validated for low-vision and dyslexic readability. Never fall back to a serif or a geometric sans with ambiguous b/d/p/q shapes."
+  },
+  "spacing": {
+    "1": "4px",
+    "2": "8px",
+    "3": "16px",
+    "4": "24px",
+    "5": "40px",
+    "6": "64px"
+  },
+  "radius": {
+    "sm": "6px",
+    "md": "12px",
+    "lg": "20px"
+  },
+  "motion": {
+    "duration": "180ms",
+    "easing": "ease-out",
+    "respectReducedMotion": true
+  },
+  "a11yPrinciples": [
+    "Text-background contrast >= 7:1 (AAA) for all body text, verified by computation, not by eye",
+    "Never use pure #000/#FFF; near-black/near-white reduces halation and glare for light-sensitive readers",
+    "Body text is always left-aligned, never justified, to keep ragged-right line breaks predictable to track",
+    "Line height >= 1.6 (>= 1.8 in dyslexic mode), generous letter/word spacing",
+    "Line measure capped near 70ch so lines stay short enough to track without losing place",
+    "prefers-reduced-motion: reduce must fully disable non-essential animation/transition, not just shorten it",
+    "Focus indicators are a thick, high-contrast color reserved only for focus (never reused elsewhere) and are never removed",
+    "No tight repeating high-frequency patterns (fine stripes, moire, busy textures) anywhere in backgrounds or borders -- documented visual-stress trigger for dyslexic and photosensitive users",
+    "Content is chunked: short paragraphs, real headings, lists over prose walls -- reduces working-memory load for ADHD readers",
+    "Every screen keeps one clear primary action; avoid competing equal-weight CTAs"
+  ]
+}

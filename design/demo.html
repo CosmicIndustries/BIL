@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Aquila Design System — Demo</title>
+<link rel="stylesheet" href="aquila-theme.css" />
+<style>
+  .aq-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--aq-space-2);
+    align-items: center;
+    padding-block: var(--aq-space-4);
+    border-bottom: 1px solid var(--aq-border);
+    margin-bottom: var(--aq-space-5);
+  }
+  .aq-toolbar .spacer { flex: 1; }
+  table.aq-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-block: var(--aq-space-3) var(--aq-space-5);
+  }
+  table.aq-table th, table.aq-table td {
+    text-align: left;
+    padding: var(--aq-space-2) var(--aq-space-3);
+    border-bottom: 1px solid var(--aq-border);
+  }
+  table.aq-table th {
+    color: var(--aq-text-muted);
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  code.aq-code {
+    background: var(--aq-surface-alt);
+    border: 1px solid var(--aq-border);
+    border-radius: var(--aq-radius-sm);
+    padding: 2px 6px;
+  }
+  .aq-swatch-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--aq-space-3);
+    margin-block: var(--aq-space-3) var(--aq-space-5);
+  }
+  .aq-swatch {
+    display: flex;
+    flex-direction: column;
+    gap: var(--aq-space-1);
+    width: 140px;
+  }
+  .aq-swatch .chip {
+    height: 64px;
+    border-radius: var(--aq-radius-md);
+    border: 1px solid var(--aq-border);
+  }
+  .aq-swatch .label { font-size: 0.8rem; color: var(--aq-text-muted); }
+  footer.aq-foot {
+    border-top: 1px solid var(--aq-border);
+    padding-block: var(--aq-space-4);
+    margin-top: var(--aq-space-6);
+    color: var(--aq-text-muted);
+    font-size: 0.9rem;
+  }
+</style>
+</head>
+<body>
+  <div class="aq-container">
+    <div class="aq-toolbar">
+      <span class="aq-badge">Aquila v0.1.0</span>
+      <span class="aq-badge">WCAG AAA text contrast</span>
+      <div class="spacer"></div>
+      <button class="aq-button" id="theme-toggle" type="button" aria-pressed="false">Switch to light</button>
+      <button class="aq-button" id="dyslexic-toggle" type="button" aria-pressed="false">Dyslexic mode: off</button>
+    </div>
+
+    <h1>Aquila Design System</h1>
+    <p>
+      This page applies the Aquila theme to real BIL content — the SUES slot syntax and
+      BIL token grammar from the project README — so the tokens can be checked against
+      actual reading material, not lorem ipsum.
+    </p>
+
+    <h2>Color tokens</h2>
+    <p>Computed against <code class="aq-code">--aq-bg</code> using the WCAG 2.1 relative-luminance formula.</p>
+    <div class="aq-swatch-row">
+      <div class="aq-swatch"><div class="chip" style="background:var(--aq-bg)"></div><span class="label">bg</span></div>
+      <div class="aq-swatch"><div class="chip" style="background:var(--aq-surface)"></div><span class="label">surface</span></div>
+      <div class="aq-swatch"><div class="chip" style="background:var(--aq-surface-alt)"></div><span class="label">surface-alt</span></div>
+      <div class="aq-swatch"><div class="chip" style="background:var(--aq-accent)"></div><span class="label">accent</span></div>
+      <div class="aq-swatch"><div class="chip" style="background:var(--aq-accent-text)"></div><span class="label">accent-text (~13.8:1)</span></div>
+      <div class="aq-swatch"><div class="chip" style="background:var(--aq-text)"></div><span class="label">text (~18.9:1)</span></div>
+    </div>
+
+    <h2>SUES Slot Syntax</h2>
+    <p>Human-typed compact input format: <code class="aq-code">ACT:&lt;speech_act&gt; AGT:&lt;agent&gt; PRED:&lt;predicate&gt; OBJ:&lt;object&gt; STYLE:&lt;style+style&gt; OUT:&lt;format&gt;</code></p>
+    <table class="aq-table">
+      <thead><tr><th>Slot</th><th>Description</th><th>Example values</th></tr></thead>
+      <tbody>
+        <tr><td><code class="aq-code">ACT</code></td><td>Speech act</td><td><code class="aq-code">!askdo</code> <code class="aq-code">!do</code> <code class="aq-code">?ask</code> <code class="aq-code">whyshow</code> <code class="aq-code">say</code></td></tr>
+        <tr><td><code class="aq-code">AGT</code></td><td>Agent/doer</td><td><code class="aq-code">@self</code> <code class="aq-code">@you</code> <code class="aq-code">@we</code></td></tr>
+        <tr><td><code class="aq-code">PRED</code></td><td>Predicate/action</td><td><code class="aq-code">partmake</code> <code class="aq-code">workagain</code> <code class="aq-code">bettermake</code></td></tr>
+        <tr><td><code class="aq-code">OBJ</code></td><td>Object/theme</td><td><code class="aq-code">codedo</code> <code class="aq-code">partnet</code> <code class="aq-code">infobits</code></td></tr>
+        <tr><td><code class="aq-code">STYLE</code></td><td>Output style (stackable)</td><td><code class="aq-code">stepclear+technical</code></td></tr>
+        <tr><td><code class="aq-code">OUT</code></td><td>Output format</td><td><code class="aq-code">codeout</code> <code class="aq-code">jsonout</code> <code class="aq-code">pdfout</code></td></tr>
+      </tbody>
+    </table>
+
+    <h2>BIL Token Grammar</h2>
+    <table class="aq-table">
+      <thead><tr><th>Token</th><th>Type</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><code class="aq-code">R1</code> <code class="aq-code">R2</code> <code class="aq-code">R3</code></td><td>Rumble</td><td>noun root / entity / negation / weight</td></tr>
+        <tr><td><code class="aq-code">W1</code> <code class="aq-code">W2</code> <code class="aq-code">W3</code></td><td>Whistle</td><td>verb/action / process / future / abstraction</td></tr>
+        <tr><td><code class="aq-code">C1</code></td><td>Delimiter</td><td>phrase separator</td></tr>
+        <tr><td><code class="aq-code">C2</code></td><td>Delimiter</td><td>sentence terminator</td></tr>
+        <tr><td><code class="aq-code">G1</code></td><td>Modifier</td><td>question / rising</td></tr>
+        <tr><td><code class="aq-code">G2</code></td><td>Modifier</td><td>command / directive</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Components</h2>
+    <div class="aq-surface" style="margin-bottom: var(--aq-space-4);">
+      <p style="margin-top:0">This is an <code class="aq-code">.aq-surface</code> card — used for grouping related content with a visible but low-contrast border.</p>
+      <button class="aq-button aq-button--primary" type="button">Primary action</button>
+      <button class="aq-button" type="button">Secondary action</button>
+    </div>
+    <p>Tab to the buttons above to see the focus ring — a thick, dedicated color never reused elsewhere in the UI.</p>
+
+    <footer class="aq-foot">
+      Aquila Design System — part of the BIL / SANd-X ecosystem. See <code class="aq-code">design/AQUILA_STYLE_GUIDE.md</code> for the full spec.
+    </footer>
+  </div>
+
+  <script>
+    const html = document.documentElement;
+    const themeBtn = document.getElementById('theme-toggle');
+    const dysBtn = document.getElementById('dyslexic-toggle');
+
+    themeBtn.addEventListener('click', () => {
+      const isLight = html.getAttribute('data-theme') === 'light';
+      html.setAttribute('data-theme', isLight ? 'dark' : 'light');
+      themeBtn.textContent = isLight ? 'Switch to light' : 'Switch to dark';
+      themeBtn.setAttribute('aria-pressed', String(!isLight));
+    });
+
+    dysBtn.addEventListener('click', () => {
+      const on = html.getAttribute('data-dyslexic-mode') === 'on';
+      html.setAttribute('data-dyslexic-mode', on ? 'off' : 'on');
+      dysBtn.textContent = on ? 'Dyslexic mode: off' : 'Dyslexic mode: on';
+      dysBtn.setAttribute('aria-pressed', String(!on));
+    });
+  </script>
+</body>
+</html>
