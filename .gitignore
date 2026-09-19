@@ -1,2 +1,4 @@
 __pycache__/
 *.pyc
+entrainment_session_output/
+full_build_output/

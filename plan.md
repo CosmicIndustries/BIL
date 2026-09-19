@@ -169,4 +169,3 @@ User
 ---
 
 *BIL's core value: forces explicit semantics — communicates meaning, not words — dramatically reducing ambiguity for AI agents.*
-
