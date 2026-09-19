@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Cosmic OTF YouTube
 // @namespace    CosmicIndustries
-// @version      0.4.0
+// @version      0.5.0
 // @description  Real-time GPU video reconstruction and AudioWorklet DSP for YouTube.
 // @author       CosmicIndustries
 // @license      MIT
@@ -17,7 +17,7 @@
 
     /*
      * ==========================================================
-     * COSMIC OTF YOUTUBE v0.4
+     * COSMIC OTF YOUTUBE v0.5
      * ==========================================================
      *
      * VIDEO
@@ -67,10 +67,24 @@
      * by default. Both the panel-open state and the more-options
      * state are persisted to localStorage like everything else.
      *
+     * A/B TESTING
+     * -----------
+     * Alt+Shift+U already lets you A/B "processed vs. raw" instantly.
+     * The A/B TEST panel section goes one step further: pick any two
+     * named presets as "A" and "B", then:
+     *
+     *   4. Alt+Shift+B  — flips playback between preset A and B.
+     *   5. Alt+Shift+1  — logs "I prefer A" for the current video.
+     *   6. Alt+Shift+2  — logs "I prefer B" for the current video.
+     *
+     * Each vote is timestamped and tied to the page's video URL, so
+     * a run of blind A/B flips builds a real log instead of a vague
+     * impression. "Export log" in the panel copies it as JSON.
+     *
      * ==========================================================
      */
 
-    const VERSION = '0.4.0';
+    const VERSION = '0.5.0';
 
     // Bump this if the shape of CFG ever changes incompatibly.
     const STORAGE_KEY =
@@ -121,6 +135,17 @@
         },
 
         preset: 'Transparent',
+
+        // Blind A/B comparison between two named presets. `active`
+        // tracks which one is currently applied ('A', 'B', or null
+        // before the first flip); `log` accumulates timestamped
+        // votes so results are recorded, not just remembered.
+        abTest: {
+            presetA: 'Transparent',
+            presetB: 'Crisp',
+            active: null,
+            log: []
+        },
 
         // Panel chrome state, persisted so it "remembers" how you
         // last left it.
@@ -588,6 +613,215 @@
         resizeVideo();
 
         refreshGUI();
+    }
+
+
+    /* ==========================================================
+       A/B TESTING
+       ========================================================== */
+
+    // Names of every defined preset, in declaration order — shared
+    // by the PRESET select and the two A/B pickers.
+    function getPresetNames() {
+
+        return Object.keys(
+            PRESETS
+        );
+    }
+
+
+    // Applies whichever preset is currently assigned to the given
+    // A/B slot ('A' or 'B') and records it as the active side.
+    function applyABPreset(letter) {
+
+        const name =
+            letter === 'A'
+                ? CFG.abTest.presetA
+                : CFG.abTest.presetB;
+
+        CFG.abTest.active =
+            letter;
+
+        applyPreset(
+            name
+        );
+    }
+
+
+    // Alt+Shift+B — flips playback between preset A and B. Starts
+    // on A if nothing has been applied yet this session.
+    function toggleABTest() {
+
+        const next =
+            CFG.abTest.active === 'A'
+                ? 'B'
+                : 'A';
+
+        applyABPreset(
+            next
+        );
+
+        showToast(
+            `A/B: now playing ${next} (${
+                next === 'A'
+                    ? CFG.abTest.presetA
+                    : CFG.abTest.presetB
+            })`
+        );
+    }
+
+
+    // Records a timestamped vote for the given side, tied to the
+    // current video, so a run of blind flips leaves an actual log
+    // instead of a vague impression.
+    function logABVote(letter) {
+
+        CFG.abTest.log.push(
+            {
+                t: Date.now(),
+                url: location.href,
+                title: document.title,
+                choice: letter,
+                presetA: CFG.abTest.presetA,
+                presetB: CFG.abTest.presetB
+            }
+        );
+
+        saveConfig();
+
+        refreshGUI();
+
+        showToast(
+            `Logged: prefer ${letter} (${CFG.abTest.log.length} total)`
+        );
+    }
+
+
+    function clearABLog() {
+
+        CFG.abTest.log =
+            [];
+
+        saveConfig();
+
+        refreshGUI();
+
+        showToast(
+            'A/B log cleared'
+        );
+    }
+
+
+    // Copies the A/B log as JSON to the clipboard, falling back to
+    // a downloaded file if the Clipboard API is unavailable (e.g.
+    // insecure context or permission denied).
+    async function exportABLog() {
+
+        const json =
+            JSON.stringify(
+                CFG.abTest.log,
+                null,
+                2
+            );
+
+        try {
+
+            await navigator.clipboard.writeText(
+                json
+            );
+
+            showToast(
+                `Copied ${CFG.abTest.log.length} entries to clipboard`
+            );
+
+        } catch {
+
+            const blob =
+                new Blob(
+                    [json],
+                    {
+                        type:
+                            'application/json'
+                    }
+                );
+
+            const url =
+                URL.createObjectURL(
+                    blob
+                );
+
+            const link =
+                document.createElement(
+                    'a'
+                );
+
+            link.href =
+                url;
+
+            link.download =
+                'cosmic-otf-ab-log.json';
+
+            link.click();
+
+            URL.revokeObjectURL(
+                url
+            );
+
+            showToast(
+                `Downloaded ${CFG.abTest.log.length} entries`
+            );
+        }
+    }
+
+
+    // Small transient message shown for keyboard-driven actions
+    // (A/B flip, vote logged) that have no panel open to give
+    // feedback in.
+    let toastTimer = null;
+
+    function showToast(text) {
+
+        let toast =
+            document.getElementById(
+                'cosmic-otf-toast'
+            );
+
+        if (!toast) {
+
+            toast =
+                document.createElement(
+                    'div'
+                );
+
+            toast.id =
+                'cosmic-otf-toast';
+
+            document.body.appendChild(
+                toast
+            );
+        }
+
+        toast.textContent =
+            text;
+
+        toast.classList.add(
+            'visible'
+        );
+
+        clearTimeout(
+            toastTimer
+        );
+
+        toastTimer =
+            setTimeout(
+                () => {
+
+                    toast.classList.remove(
+                        'visible'
+                    );
+                },
+                1600
+            );
     }
 
 
@@ -3337,6 +3571,61 @@ void main() {
         6px;
 }
 
+
+/* Transient message for keyboard-driven actions (A/B flip, vote
+   logged) that have no panel open to show feedback in. */
+#cosmic-otf-toast {
+
+    position: fixed;
+
+    bottom: 32px;
+    left: 50%;
+
+    transform:
+        translate(-50%, 8px);
+
+    z-index:
+        2147483647;
+
+    padding:
+        8px 14px;
+
+    color:
+        #eeeeee;
+
+    background:
+        rgba(14,14,17,.96);
+
+    border:
+        1px solid
+        rgba(255,255,255,.12);
+
+    border-radius:
+        10px;
+
+    font:
+        12px/1.4
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        sans-serif;
+
+    opacity: 0;
+
+    pointer-events: none;
+
+    transition:
+        .15s;
+}
+
+#cosmic-otf-toast.visible {
+
+    opacity: 1;
+
+    transform:
+        translate(-50%, 0);
+}
+
 `;
 
 
@@ -3901,6 +4190,126 @@ void main() {
             </div>
 
 
+            <!-- A/B TEST -->
+
+            <div class="cotf-section">
+
+                <div class="cotf-section-header">
+
+                    <span class="cotf-section-title">
+                        A/B TEST
+                    </span>
+
+                </div>
+
+
+                <div class="cotf-content">
+
+                    <div class="cotf-buttons">
+
+                        <select data-ab-a>
+
+                            ${getPresetNames().map(
+                                name =>
+                                    `
+                                    <option
+                                        value="${name}"
+                                        ${
+                                            CFG.abTest.presetA === name
+                                                ? 'selected'
+                                                : ''
+                                        }
+                                    >
+                                        A: ${name}
+                                    </option>
+                                    `
+                            ).join('')}
+
+                        </select>
+
+                        <select data-ab-b>
+
+                            ${getPresetNames().map(
+                                name =>
+                                    `
+                                    <option
+                                        value="${name}"
+                                        ${
+                                            CFG.abTest.presetB === name
+                                                ? 'selected'
+                                                : ''
+                                        }
+                                    >
+                                        B: ${name}
+                                    </option>
+                                    `
+                            ).join('')}
+
+                        </select>
+
+                    </div>
+
+
+                    <button
+                        data-ab-flip
+                        class="cotf-reset"
+                    >
+                        Flip A ⇄ B (Alt+Shift+B)
+                    </button>
+
+
+                    <div
+                        data-ab-active
+                        style="margin-top:6px;color:#999"
+                    >
+                        Active: —
+                    </div>
+
+
+                    <div
+                        class="cotf-buttons"
+                        style="margin-top:7px"
+                    >
+
+                        <button data-ab-vote-a>
+                            Prefer A (Alt+Shift+1)
+                        </button>
+
+                        <button data-ab-vote-b>
+                            Prefer B (Alt+Shift+2)
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        class="cotf-buttons"
+                        style="margin-top:7px"
+                    >
+
+                        <button data-ab-export>
+                            Export log
+                        </button>
+
+                        <button data-ab-clear>
+                            Clear log
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        data-ab-log-count
+                        style="margin-top:6px;color:#999"
+                    >
+                        0 votes logged
+                    </div>
+
+                </div>
+
+            </div>
+
+
             <!-- STATUS -->
 
             <div class="cotf-status">
@@ -3928,7 +4337,8 @@ void main() {
 
                 <div style="margin-top:6px;color:#555">
                     Alt+Shift+P toggles this panel ·
-                    Alt+Shift+U toggles processing
+                    Alt+Shift+U toggles processing ·
+                    Alt+Shift+B flips A/B · Alt+Shift+1/2 votes
                 </div>
 
             </div>
@@ -4234,6 +4644,102 @@ void main() {
 
 
         panel.querySelector(
+            '[data-ab-a]'
+        ).addEventListener(
+            'change',
+            event => {
+
+                CFG.abTest.presetA =
+                    event.target.value;
+
+                saveConfig();
+
+                // If A is the side currently playing, re-apply it
+                // so the swap takes effect immediately.
+                if (
+                    CFG.abTest.active ===
+                    'A'
+                ) {
+
+                    applyABPreset(
+                        'A'
+                    );
+                }
+            }
+        );
+
+
+        panel.querySelector(
+            '[data-ab-b]'
+        ).addEventListener(
+            'change',
+            event => {
+
+                CFG.abTest.presetB =
+                    event.target.value;
+
+                saveConfig();
+
+                if (
+                    CFG.abTest.active ===
+                    'B'
+                ) {
+
+                    applyABPreset(
+                        'B'
+                    );
+                }
+            }
+        );
+
+
+        panel.querySelector(
+            '[data-ab-flip]'
+        ).addEventListener(
+            'click',
+            toggleABTest
+        );
+
+
+        panel.querySelector(
+            '[data-ab-vote-a]'
+        ).addEventListener(
+            'click',
+            () =>
+                logABVote(
+                    'A'
+                )
+        );
+
+
+        panel.querySelector(
+            '[data-ab-vote-b]'
+        ).addEventListener(
+            'click',
+            () =>
+                logABVote(
+                    'B'
+                )
+        );
+
+
+        panel.querySelector(
+            '[data-ab-export]'
+        ).addEventListener(
+            'click',
+            exportABLog
+        );
+
+
+        panel.querySelector(
+            '[data-ab-clear]'
+        ).addEventListener(
+            'click',
+            clearABLog
+        );
+
+
+        panel.querySelector(
             '[data-save]'
         ).addEventListener(
             'click',
@@ -4454,6 +4960,64 @@ void main() {
 
             preset.value =
                 CFG.preset;
+        }
+
+
+        const abA =
+            STATE.panel.querySelector(
+                '[data-ab-a]'
+            );
+
+        if (abA) {
+
+            abA.value =
+                CFG.abTest.presetA;
+        }
+
+
+        const abB =
+            STATE.panel.querySelector(
+                '[data-ab-b]'
+            );
+
+        if (abB) {
+
+            abB.value =
+                CFG.abTest.presetB;
+        }
+
+
+        const abActive =
+            STATE.panel.querySelector(
+                '[data-ab-active]'
+            );
+
+        if (abActive) {
+
+            abActive.textContent =
+                CFG.abTest.active
+                    ? `Active: ${CFG.abTest.active} (${
+                          CFG.abTest.active === 'A'
+                              ? CFG.abTest.presetA
+                              : CFG.abTest.presetB
+                      })`
+                    : 'Active: —';
+        }
+
+
+        const abLogCount =
+            STATE.panel.querySelector(
+                '[data-ab-log-count]'
+            );
+
+        if (abLogCount) {
+
+            abLogCount.textContent =
+                `${CFG.abTest.log.length} vote${
+                    CFG.abTest.log.length === 1
+                        ? ''
+                        : 's'
+                } logged`;
         }
 
 
@@ -4758,6 +5322,54 @@ void main() {
                     saveConfig();
 
                     refreshGUI();
+
+                    return;
+                }
+
+                // Alt+Shift+B — flips playback between preset A and
+                // B for a blind comparison.
+                if (
+                    event.altKey &&
+                    event.shiftKey &&
+                    event.code === 'KeyB'
+                ) {
+
+                    event.preventDefault();
+
+                    toggleABTest();
+
+                    return;
+                }
+
+                // Alt+Shift+1 / Alt+Shift+2 — logs "I prefer A" /
+                // "I prefer B" for the current video, independent
+                // of which side is currently playing.
+                if (
+                    event.altKey &&
+                    event.shiftKey &&
+                    event.code === 'Digit1'
+                ) {
+
+                    event.preventDefault();
+
+                    logABVote(
+                        'A'
+                    );
+
+                    return;
+                }
+
+                if (
+                    event.altKey &&
+                    event.shiftKey &&
+                    event.code === 'Digit2'
+                ) {
+
+                    event.preventDefault();
+
+                    logABVote(
+                        'B'
+                    );
                 }
             },
             true
@@ -4810,7 +5422,7 @@ void main() {
         monitorPlayer();
 
         log(
-            `Cosmic OTF v${VERSION} loaded — Alt+Shift+P opens the panel, Alt+Shift+U toggles processing`
+            `Cosmic OTF v${VERSION} loaded — Alt+Shift+P opens the panel, Alt+Shift+U toggles processing, Alt+Shift+B flips A/B presets`
         );
     }
 
