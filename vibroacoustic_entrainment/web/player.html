@@ -1,0 +1,1002 @@
+<!doctype html>
+<title>Phase Console</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0b0e14;
+    --panel: #12161f;
+    --panel-2: #171d29;
+    --panel-border: #232b3a;
+    --text: #e7ebf2;
+    --text-dim: #8b94a7;
+    --text-faint: #545e72;
+    --accent: #ffb84d;
+    --danger: #ff6b6b;
+    --danger-bg: #2a1416;
+    --danger-border: #5a2226;
+    --band-beta: #5eb8ff;
+    --band-alpha: #3ddc97;
+    --band-theta: #ffb84d;
+    --band-delta: #c86dff;
+    --focus-ring: #5eb8ff;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="light"]) {
+      --bg: #f3f1eb;
+      --panel: #ffffff;
+      --panel-2: #ece8de;
+      --panel-border: #ddd6c4;
+      --text: #211d16;
+      --text-dim: #5a5646;
+      --text-faint: #9b9686;
+      --accent: #b5680d;
+      --danger: #b5352b;
+      --danger-bg: #fbeceb;
+      --danger-border: #e8c3c0;
+      --band-beta: #1f7cc7;
+      --band-alpha: #1f9a68;
+      --band-theta: #b5680d;
+      --band-delta: #8b3fc7;
+      --focus-ring: #1f7cc7;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b0e14;
+    --panel: #12161f;
+    --panel-2: #171d29;
+    --panel-border: #232b3a;
+    --text: #e7ebf2;
+    --text-dim: #8b94a7;
+    --text-faint: #545e72;
+    --accent: #ffb84d;
+    --danger: #ff6b6b;
+    --danger-bg: #2a1416;
+    --danger-border: #5a2226;
+    --band-beta: #5eb8ff;
+    --band-alpha: #3ddc97;
+    --band-theta: #ffb84d;
+    --band-delta: #c86dff;
+    --focus-ring: #5eb8ff;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    padding: 28px 20px 60px;
+    display: flex;
+    justify-content: center;
+  }
+  .tabular { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  .console {
+    width: 100%;
+    max-width: 1120px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  header.masthead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--panel-border);
+    padding-bottom: 16px;
+  }
+  .wordmark {
+    font-family: 'Big Shoulders Display', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: 40px;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    text-wrap: balance;
+  }
+  .wordmark span { color: var(--accent); }
+  .tagline {
+    color: var(--text-dim);
+    font-size: 13.5px;
+    max-width: 46ch;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 780px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .panel h2 {
+    font-family: 'Big Shoulders Display', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin: 0 0 14px;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label {
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  select, input[type="number"] {
+    background: var(--panel-2);
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 9px 10px;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-size: 14px;
+  }
+  select:focus-visible, input:focus-visible, button:focus-visible, .check-row:focus-within {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+  .protocol-desc { font-size: 12.5px; color: var(--text-dim); line-height: 1.5; margin-top: -8px; }
+
+  .radio-row, .check-row { display: flex; align-items: flex-start; gap: 9px; font-size: 13.5px; }
+  .radio-row + .radio-row { margin-top: 8px; }
+  .radio-row input, .check-row input { margin-top: 3px; accent-color: var(--accent); }
+  .radio-row div, .check-row div { display: flex; flex-direction: column; gap: 2px; }
+  .radio-row small, .check-row small { color: var(--text-faint); font-size: 11.5px; }
+
+  .warning {
+    background: var(--danger-bg);
+    border: 1px solid var(--danger-border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+  .warning strong { color: var(--danger); }
+
+  .display-panel { display: flex; flex-direction: column; gap: 16px; }
+
+  .readout-row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .readout {
+    flex: 1 1 140px;
+    background: var(--panel-2);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .readout .label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
+  .readout .value { font-size: 26px; margin-top: 4px; }
+  .readout .value.band { transition: color 0.4s ease; }
+  .readout .sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+  .track-wrap { display: flex; flex-direction: column; gap: 6px; }
+  .track {
+    position: relative;
+    height: 46px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--panel-border);
+    display: flex;
+  }
+  .track .seg { height: 100%; }
+  .playhead {
+    position: absolute;
+    top: -3px; bottom: -3px;
+    width: 2px;
+    background: var(--text);
+    box-shadow: 0 0 8px 1px var(--text);
+    transform: translateX(-1px);
+  }
+  .track-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-faint); }
+  .stage-name { font-size: 13.5px; color: var(--text-dim); }
+  .stage-name b { color: var(--text); font-weight: 600; }
+
+  .guidance {
+    background: var(--panel-2);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .guidance .label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 6px; }
+  .guidance-text {
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--text);
+    font-style: italic;
+    max-width: 62ch;
+    min-height: 1.55em;
+    transition: opacity 0.6s ease;
+  }
+
+  .strobe-row { display: flex; gap: 14px; align-items: center; }
+  .strobe-swatch {
+    width: 64px; height: 64px;
+    border-radius: 8px;
+    border: 1px solid var(--panel-border);
+    background: #000;
+  }
+  .strobe-meta { font-size: 12.5px; color: var(--text-dim); line-height: 1.5; }
+
+  .transport { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  button {
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    border-radius: 7px;
+    padding: 11px 20px;
+    border: 1px solid var(--panel-border);
+    background: var(--panel-2);
+    color: var(--text);
+    cursor: pointer;
+  }
+  button.primary {
+    background: var(--accent);
+    border-color: transparent;
+    color: #17130a;
+  }
+  button.primary:disabled {
+    background: var(--panel-2);
+    color: var(--text-faint);
+    cursor: not-allowed;
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button:not(:disabled):hover { filter: brightness(1.08); }
+  .status-pill {
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: var(--panel-2);
+    border: 1px solid var(--panel-border);
+    color: var(--text-dim);
+  }
+  .status-pill.live { color: var(--accent); border-color: var(--accent); }
+
+  footer.fine-print {
+    border-top: 1px solid var(--panel-border);
+    padding-top: 14px;
+    font-size: 11.5px;
+    color: var(--text-faint);
+    line-height: 1.6;
+  }
+
+  #strobeOverlay {
+    position: fixed; inset: 0;
+    background: #000;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 999;
+  }
+  #strobeOverlay.active { display: flex; }
+  #strobeOverlay button {
+    position: absolute; top: 20px; right: 20px;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    border-color: rgba(255,255,255,0.2);
+  }
+  #strobeOverlay .exit-hint {
+    color: rgba(255,255,255,0.4);
+    font-size: 12px;
+    margin-bottom: 28px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  #strobeOverlay .overlay-guidance {
+    color: rgba(255,255,255,0.88);
+    font-size: 22px;
+    font-style: italic;
+    line-height: 1.5;
+    max-width: 58ch;
+    text-align: center;
+    margin: 0 24px 18px;
+    transition: opacity 0.6s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .readout .value.band,
+    .guidance-text,
+    #strobeOverlay .overlay-guidance { transition: none; }
+  }
+</style>
+
+<div class="console">
+  <header class="masthead">
+    <div>
+      <div class="wordmark">PHASE<span>·</span>CONSOLE</div>
+      <p class="tagline">A vibroacoustic + haptovisual entrainment player &mdash; binaural/isochronic audio, tactile-transducer pulse, and photic strobe, phase-locked to one frequency descent.</p>
+    </div>
+    <span class="status-pill" id="statusPill">idle</span>
+  </header>
+
+  <div class="grid">
+    <div class="panel" id="configPanel">
+      <h2>Session Setup</h2>
+
+      <div class="field">
+        <label for="protocolSelect">Protocol</label>
+        <select id="protocolSelect"></select>
+      </div>
+      <p class="protocol-desc" id="protocolDesc"></p>
+
+      <div class="field">
+        <label for="carrierInput">Carrier tone (Hz)</label>
+        <input type="number" id="carrierInput" value="200" min="80" max="500" step="5">
+      </div>
+
+      <div class="field">
+        <label>Audio mode</label>
+        <div class="radio-row">
+          <input type="radio" name="audioMode" value="binaural" id="modeBinaural" checked>
+          <div><label for="modeBinaural">Binaural beat</label><small>Two tones, one per ear &mdash; headphones required.</small></div>
+        </div>
+        <div class="radio-row">
+          <input type="radio" name="audioMode" value="monaural" id="modeMonaural">
+          <div><label for="modeMonaural">Monaural beat</label><small>Beats in the air &mdash; speakers OK.</small></div>
+        </div>
+        <div class="radio-row">
+          <input type="radio" name="audioMode" value="isochronic" id="modeIsochronic">
+          <div><label for="modeIsochronic">Isochronic pulse</label><small>Single tone, gated on/off.</small></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Haptic channel</label>
+        <div class="check-row">
+          <input type="checkbox" id="hapticEnable" checked>
+          <div><label for="hapticEnable">Vibrate in sync</label><small>Vibration API &mdash; supported on some Android browsers only.</small></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Photic channel</label>
+        <div class="check-row">
+          <input type="checkbox" id="photicEnable" checked>
+          <div><label for="photicEnable">Strobe fullscreen</label><small>Brightness pulse synced to the descent.</small></div>
+        </div>
+        <div class="radio-row" style="margin-top:10px;">
+          <input type="radio" name="photicWave" value="sine" id="waveSine" checked>
+          <div><label for="waveSine">Sine (softer)</label><small>No flicker harmonics &mdash; lower seizure risk.</small></div>
+        </div>
+        <div class="radio-row">
+          <input type="radio" name="photicWave" value="square" id="waveSquare">
+          <div><label for="waveSquare">Square (stronger)</label><small>Hard strobe &mdash; higher seizure risk in the 3&ndash;60&nbsp;Hz band.</small></div>
+        </div>
+      </div>
+
+      <div class="warning" id="riskWarning" style="margin-top:14px;">
+        <strong>Before you start:</strong> this protocol sweeps into the 3&ndash;60&nbsp;Hz photosensitive-seizure caution band. Do not use the strobe if you or the viewer has photosensitive epilepsy, migraine with aura, or another flash sensitivity. Not a medical device. Stop immediately if you feel unwell.
+        <div class="check-row" style="margin-top:10px;">
+          <input type="checkbox" id="ackRisk">
+          <div><label for="ackRisk">I understand the risks above and confirm neither I nor the viewer has these conditions.</label></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel display-panel">
+      <h2>Live Session</h2>
+
+      <div class="readout-row">
+        <div class="readout">
+          <div class="label">Elapsed / Total</div>
+          <div class="value tabular" id="timeReadout">00:00 / 12:00</div>
+        </div>
+        <div class="readout">
+          <div class="label">Entrainment freq.</div>
+          <div class="value tabular band" id="freqReadout">10.00 Hz</div>
+          <div class="sub" id="bandReadout">beta &ndash; alert</div>
+        </div>
+        <div class="readout">
+          <div class="label">Stage</div>
+          <div class="value" id="stageIndexReadout" style="font-size:26px;">1 / 2</div>
+          <div class="sub" id="stageNameReadout">focus10_settle</div>
+        </div>
+      </div>
+
+      <div class="track-wrap">
+        <div class="track" id="track"></div>
+        <div class="track-labels"><span>0:00</span><span id="trackTotalLabel">12:00</span></div>
+      </div>
+
+      <div class="guidance">
+        <div class="label">Guidance</div>
+        <div class="guidance-text" id="guidanceText">Find a comfortable position, lying down if you can. Let your eyes close.</div>
+      </div>
+
+      <div class="strobe-row">
+        <div class="strobe-swatch" id="swatch"></div>
+        <div class="strobe-meta">
+          Photic preview &mdash; press <b>Enter fullscreen strobe</b> once the session is running to use it for real. This swatch just mirrors the brightness curve so you can check it before committing to full-screen.
+        </div>
+      </div>
+
+      <div class="transport">
+        <button class="primary" id="startBtn">Start session</button>
+        <button id="stopBtn" disabled>Stop</button>
+        <button id="fullscreenBtn" disabled>Enter fullscreen strobe</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="fine-print">
+    Self-directed relaxation &amp; exploration tool, not a medical device or a claim that any protocol produces a validated cognitive state. Contraindicated for photosensitive epilepsy, migraine with visual aura, implanted cardiac devices, or pregnancy (haptic channel) without clinician guidance. Binaural mode requires headphones. Stop the session and open a window if you feel dizzy, nauseated, or unwell. Full research background and safety notes: <code>docs/VIBROACOUSTIC_ENTRAINMENT.md</code>.
+  </footer>
+</div>
+
+<div id="strobeOverlay">
+  <button id="exitStrobeBtn">Exit fullscreen (Esc)</button>
+  <div class="overlay-guidance" id="overlayGuidanceText">Find a comfortable position, lying down if you can. Let your eyes close.</div>
+  <div class="exit-hint" id="overlayStageLabel">focus10_settle &middot; 10.00 Hz</div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- Protocol model (ported from vibroacoustic_entrainment/protocol.py) ----
+
+  function stage(name, duration_s, freq_start, freq_end, note, cues) {
+    return { name, duration_s, freq_start, freq_end, note: note || "", cues: cues || [] };
+  }
+
+  function stageFreqAt(s, t) {
+    t = Math.max(0, Math.min(t, s.duration_s));
+    const rate = (s.freq_end - s.freq_start) / s.duration_s;
+    return s.freq_start + rate * t;
+  }
+  function stagePhaseAt(s, t) {
+    t = Math.max(0, Math.min(t, s.duration_s));
+    const rate = (s.freq_end - s.freq_start) / s.duration_s;
+    return 2 * Math.PI * (s.freq_start * t + 0.5 * rate * t * t);
+  }
+
+  function makeProtocol(name, stages, carrier_hz, description) {
+    const total_duration = stages.reduce((a, s) => a + s.duration_s, 0);
+
+    function locate(t) {
+      t = Math.max(0, Math.min(t, total_duration));
+      let acc = 0;
+      for (let i = 0; i < stages.length; i++) {
+        const s = stages[i];
+        if (t <= acc + s.duration_s || i === stages.length - 1) return [s, t - acc, i];
+        acc += s.duration_s;
+      }
+    }
+    function freqAt(t) { const [s, off] = locate(t); return stageFreqAt(s, off); }
+    function phaseAt(t) {
+      t = Math.max(0, Math.min(t, total_duration));
+      let accT = 0, accPhase = 0;
+      for (const s of stages) {
+        if (t <= accT + s.duration_s) return accPhase + stagePhaseAt(s, t - accT);
+        accPhase += stagePhaseAt(s, s.duration_s);
+        accT += s.duration_s;
+      }
+      return accPhase;
+    }
+    function stageBoundaries() {
+      let t = 0;
+      return stages.map((s, i) => {
+        const row = { name: s.name, start_s: t, end_s: t + s.duration_s, freq_start: s.freq_start, freq_end: s.freq_end, index: i };
+        t += s.duration_s;
+        return row;
+      });
+    }
+    // Flatten each stage's {frac, text} cues into one absolute-time-sorted guidance script.
+    const guidanceCues = (() => {
+      let t = 0;
+      const out = [];
+      for (const s of stages) {
+        for (const c of s.cues) out.push({ t: t + c.frac * s.duration_s, text: c.text });
+        t += s.duration_s;
+      }
+      out.sort((a, b) => a.t - b.t);
+      return out;
+    })();
+    function cueAt(t) {
+      let current = guidanceCues.length ? guidanceCues[0] : null;
+      for (const c of guidanceCues) { if (c.t <= t) current = c; else break; }
+      return current;
+    }
+    return { name, stages, carrier_hz, description, total_duration, locate, freqAt, phaseAt, stageBoundaries, guidanceCues, cueAt };
+  }
+
+  function gatewayFocus10(duration_s, carrier_hz) {
+    duration_s = duration_s || 720; carrier_hz = carrier_hz || 200;
+    return makeProtocol("gateway_focus10", [
+      stage("focus10_settle", duration_s * 0.25, 10.0, 10.0, "Alpha settle / body relaxation.", [
+        { frac: 0.0, text: "Find a comfortable position, lying down if you can. Let your eyes close." },
+        { frac: 0.35, text: "Take three slow breaths. With each one, let more of your weight sink down." },
+        { frac: 0.75, text: "There's nothing to do yet — just let the sound hold your attention." },
+      ]),
+      stage("focus10_descend", duration_s * 0.75, 10.0, 7.0, "Alpha -> theta border descent.", [
+        { frac: 0.0, text: "Notice the tone beginning to change. You don't need to do anything with it — just notice." },
+        { frac: 0.4, text: "Mind awake, body asleep. Let your body feel heavier while your attention stays clear." },
+        { frac: 0.85, text: "Stay here as long as feels right. There's nowhere else you need to be." },
+      ]),
+    ], carrier_hz, "Monroe-style Focus 10: relaxed alertness, alpha descending toward theta.");
+  }
+  function gatewayFocus12(duration_s, carrier_hz) {
+    duration_s = duration_s || 600; carrier_hz = carrier_hz || 200;
+    return makeProtocol("gateway_focus12", [
+      stage("focus12_bridge", duration_s * 0.2, 7.0, 6.0, "Bridge in from Focus 10.", [
+        { frac: 0.0, text: "Let the sound carry you a little further down. Nothing to hold on to, nothing to push away." },
+      ]),
+      stage("focus12_theta", duration_s * 0.8, 6.0, 4.0, "Settle into mid/low theta.", [
+        { frac: 0.15, text: "This is expanded awareness — attention wider than the room you're in." },
+        { frac: 0.6, text: "If thoughts drift through, let them pass like something seen from a train window." },
+      ]),
+    ], carrier_hz, "Monroe-style Focus 12: theta-dominant expanded awareness.");
+  }
+  function gatewayFocus15(duration_s, carrier_hz) {
+    duration_s = duration_s || 600; carrier_hz = carrier_hz || 200;
+    return makeProtocol("gateway_focus15", [
+      stage("focus15_bridge", duration_s * 0.25, 4.0, 3.0, "Bridge in from Focus 12.", [
+        { frac: 0.0, text: "Time loosens here. Don't track it — just notice how still things have become." },
+      ]),
+      stage("focus15_delta_theta", duration_s * 0.75, 3.0, 2.0, "Theta/delta border plateau.", [
+        { frac: 0.2, text: "No time. No place to be next." },
+        { frac: 0.7, text: "Rest at this depth. Let the stillness hold you." },
+      ]),
+    ], carrier_hz, "Monroe-style Focus 15: theta/delta border, minimal cortical arousal.");
+  }
+  function gatewayFull(carrier_hz) {
+    carrier_hz = carrier_hz || 200;
+    const f10 = gatewayFocus10(720, carrier_hz), f12 = gatewayFocus12(600, carrier_hz), f15 = gatewayFocus15(600, carrier_hz);
+    return makeProtocol("gateway_full_progression", [...f10.stages, ...f12.stages, ...f15.stages], carrier_hz, "Chained Focus 10 -> 12 -> 15 descent.");
+  }
+  function obePhase(carrier_hz) {
+    carrier_hz = carrier_hz || 200;
+    const f10 = gatewayFocus10(600, carrier_hz), f12 = gatewayFocus12(480, carrier_hz);
+    const bridge = stage("phase_bridge", 180, 4.0, 4.0, "Bridge from Focus 12 into the plateau.", [
+      { frac: 0.0, text: "Settle in. What comes next asks for patience, not effort." },
+    ]);
+    const plateau = stage("phase_plateau", 900, 4.0, 4.0, "Extended low-theta hold ('stay in the state') -- the target phase window.", [
+      { frac: 0.0, text: "Hold this state exactly as it is. Don't try to fall asleep, and don't try to wake up further — just stay." },
+      { frac: 0.3, text: "If you feel a hum, a pulse, a vibration — that's the sensation this stage is known for. Let it build on its own." },
+      { frac: 0.6, text: "Curiosity, not effort. Notice without reaching." },
+      { frac: 0.88, text: "We're coming back now. Let the pulse settle. Wiggle your fingers when you're ready." },
+    ]);
+    return makeProtocol("hyper_cognition_obe_phase_protocol", [...f10.stages, ...f12.stages, bridge, plateau], carrier_hz,
+      "Focus 10 -> 12 -> extended 4 Hz theta plateau, modeled on OBE-induction literature's 'hold the vibrational stage' instruction. Experiential target, not a validated neuroscience protocol.");
+  }
+  function focus21ExtendedBridge(carrier_hz) {
+    carrier_hz = carrier_hz || 200;
+    const gw = gatewayFull(carrier_hz);
+    const trough = stage("focus21_trough", 300, 2.0, 1.0, "Speculative deep-delta dip past the Focus 15 floor.", [
+      { frac: 0.0, text: "There's no map past this point — just keep breathing and let the descent continue." },
+      { frac: 0.6, text: "This is speculative territory. Stay curious, not anxious." },
+    ]);
+    const hold = stage("focus21_hold", 240, 1.0, 1.0, "Brief hold at the trough.", [
+      { frac: 0.2, text: "Rest here briefly. Nothing further to reach for." },
+    ]);
+    const bridgeBack = stage("focus21_bridge_back", 360, 1.0, 8.0, "Bridge back up toward alpha.", [
+      { frac: 0.0, text: "We're bridging back now. Let the frequency rise carry you gently upward." },
+      { frac: 0.7, text: "Almost back to ordinary awareness. Take your time." },
+    ]);
+    return makeProtocol("focus21_extended_bridge", [...gw.stages, trough, hold, bridgeBack], carrier_hz,
+      "Speculative extension past Focus 15: a brief deep-delta trough and a bridge back to alpha. Not sourced from any public Focus 21 frequency (none is given) — this project's own guess at the schedule shape.");
+  }
+  function luciaHypnagogic(carrier_hz) {
+    carrier_hz = carrier_hz || 200;
+    return makeProtocol("lucia_hypnagogic", [
+      stage("lucia_settle", 60, 10.0, 10.0, "Eyes closed, settle with the light on.", [
+        { frac: 0.0, text: "Close your eyes. Let the light play across your eyelids without trying to look at it." },
+      ]),
+      stage("lucia_ramp_delta", 60, 10.0, 3.0, "Ramp down toward the delta preset.", []),
+      stage("lucia_delta_hold", 180, 3.0, 3.0, "Hold at ~3 Hz (delta preset).", [
+        { frac: 0.1, text: "Slow, deep pulsing. Just watch whatever patterns or colors appear on their own." },
+      ]),
+      stage("lucia_ramp_theta", 45, 3.0, 6.0, "Ramp up toward the theta preset.", []),
+      stage("lucia_theta_hold", 180, 6.0, 6.0, "Hold at ~6 Hz (theta preset).", [
+        { frac: 0.1, text: "This is the hypnagogic range — the same threshold as just before falling asleep." },
+      ]),
+      stage("lucia_ramp_alpha", 45, 6.0, 10.0, "Ramp up toward the alpha preset.", []),
+      stage("lucia_alpha_hold", 180, 10.0, 10.0, "Hold at ~10 Hz (alpha preset).", [
+        { frac: 0.1, text: "Lighter now. Notice any afterimages or shapes without chasing them." },
+      ]),
+      stage("lucia_ramp_high", 45, 10.0, 18.0, "Ramp up into a higher, more alerting band.", []),
+      stage("lucia_high_hold", 120, 18.0, 18.0, "Hold at ~18 Hz before closing out.", [
+        { frac: 0.1, text: "A brighter, faster pulse to close the session out." },
+      ]),
+      stage("lucia_return", 90, 18.0, 10.0, "Return to alpha to close the session.", [
+        { frac: 0.5, text: "Settling back to alpha. When you're ready, open your eyes." },
+      ]),
+    ], carrier_hz, "Photic-forward stepped session modeled on Lucia N°03's publicly reported frequency presets (delta -> theta -> alpha -> higher band), for hypnagogic-imagery exploration under closed eyelids.");
+  }
+  function vibroacousticRelaxation(carrier_hz) {
+    carrier_hz = carrier_hz || 100;
+    return makeProtocol("vibroacoustic_relaxation", [
+      stage("relax_settle", 120, 10.0, 10.0, "Settle in; let the tactile pulse take over.", [
+        { frac: 0.0, text: "Get comfortable. This session isn't about going anywhere — just let the vibration work on the body." },
+      ]),
+      stage("relax_hold", 1080, 10.0, 10.0, "Extended relaxed-alpha hold.", [
+        { frac: 0.1, text: "Let the pulse settle into your muscles. Nothing to focus on but the sensation." },
+        { frac: 0.5, text: "If your mind wanders, that's fine — this stage is for the body, not the mind." },
+      ]),
+      stage("relax_ease_out", 120, 10.0, 10.0, "Ease out; stay flat, just wind down attention.", [
+        { frac: 0.2, text: "Easing out now. Take a few slow breaths before you move." },
+      ]),
+    ], carrier_hz, "Haptic-forward flat-alpha relaxation session (Skille Physioacoustic Method style) — run with a higher haptic amplitude; not a theta/delta descent and not aimed at an altered state.");
+  }
+
+  const PROTOCOLS = {
+    focus10: { build: gatewayFocus10, label: "Focus 10 — Mind Awake, Body Asleep" },
+    focus12: { build: gatewayFocus12, label: "Focus 12 — Expanded Awareness" },
+    focus15: { build: gatewayFocus15, label: "Focus 15 — No Time" },
+    gateway: { build: gatewayFull, label: "Gateway — Focus 10→12→15" },
+    obe_phase: { build: obePhase, label: "OBE Phase — Hyper-Cognition Plateau" },
+    focus21_bridge: { build: focus21ExtendedBridge, label: "Focus 21 — Speculative Bridge (experimental)" },
+    lucia_hypnagogic: { build: luciaHypnagogic, label: "Lucia Hypnagogic — Stepped Light Session" },
+    vibroacoustic_relaxation: { build: vibroacousticRelaxation, label: "Vibroacoustic Relaxation — Haptic-Forward" },
+  };
+
+  // ---- band coloring (standard EEG convention: delta 0.5-4, theta 4-8, alpha 8-13, beta 13+) ----
+  function bandOf(freq) {
+    if (freq >= 13) return { key: "beta", color: "var(--band-beta)", label: "beta – alert" };
+    if (freq >= 8) return { key: "alpha", color: "var(--band-alpha)", label: "alpha – relaxed" };
+    if (freq >= 4) return { key: "theta", color: "var(--band-theta)", label: "theta – hypnagogic" };
+    return { key: "delta", color: "var(--band-delta)", label: "delta – deep" };
+  }
+
+  function fmtTime(sec) {
+    sec = Math.max(0, Math.round(sec));
+    const m = Math.floor(sec / 60), s = sec % 60;
+    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  }
+
+  function smoothedGate(cycleFrac, duty, edgeFrac) {
+    if (edgeFrac <= 0) return cycleFrac < duty ? 1 : 0;
+    if (cycleFrac < edgeFrac) return 0.5 - 0.5 * Math.cos(Math.PI * (cycleFrac / edgeFrac));
+    if (cycleFrac < duty - edgeFrac) return 1;
+    if (cycleFrac < duty) return 0.5 - 0.5 * Math.cos(Math.PI * ((duty - cycleFrac) / edgeFrac));
+    return 0;
+  }
+
+  const RISK_LO = 3, RISK_HI = 60;
+  function protocolFreqRange(p) {
+    let lo = Infinity, hi = -Infinity;
+    for (const s of p.stages) { lo = Math.min(lo, s.freq_start, s.freq_end); hi = Math.max(hi, s.freq_start, s.freq_end); }
+    return [lo, hi];
+  }
+  function overlapsRiskBand(p) {
+    const [lo, hi] = protocolFreqRange(p);
+    return lo <= RISK_HI && hi >= RISK_LO;
+  }
+
+  // ---- DOM wiring ----
+  const protocolSelect = document.getElementById("protocolSelect");
+  const protocolDesc = document.getElementById("protocolDesc");
+  const carrierInput = document.getElementById("carrierInput");
+  const hapticEnable = document.getElementById("hapticEnable");
+  const photicEnable = document.getElementById("photicEnable");
+  const ackRisk = document.getElementById("ackRisk");
+  const riskWarning = document.getElementById("riskWarning");
+  const startBtn = document.getElementById("startBtn");
+  const stopBtn = document.getElementById("stopBtn");
+  const fullscreenBtn = document.getElementById("fullscreenBtn");
+  const statusPill = document.getElementById("statusPill");
+  const track = document.getElementById("track");
+  const timeReadout = document.getElementById("timeReadout");
+  const freqReadout = document.getElementById("freqReadout");
+  const bandReadout = document.getElementById("bandReadout");
+  const stageIndexReadout = document.getElementById("stageIndexReadout");
+  const stageNameReadout = document.getElementById("stageNameReadout");
+  const trackTotalLabel = document.getElementById("trackTotalLabel");
+  const swatch = document.getElementById("swatch");
+  const strobeOverlay = document.getElementById("strobeOverlay");
+  const overlayStageLabel = document.getElementById("overlayStageLabel");
+  const exitStrobeBtn = document.getElementById("exitStrobeBtn");
+  const guidanceText = document.getElementById("guidanceText");
+  const overlayGuidanceText = document.getElementById("overlayGuidanceText");
+
+  for (const [key, def] of Object.entries(PROTOCOLS)) {
+    const opt = document.createElement("option");
+    opt.value = key; opt.textContent = def.label;
+    if (key === "obe_phase") opt.selected = true;
+    protocolSelect.appendChild(opt);
+  }
+
+  let current = null;    // active protocol object
+  let running = false;
+  let audioCtx = null;
+  let hapticPattern = null;
+  let lastCueText = null;
+
+  function getAudioMode() { return document.querySelector('input[name="audioMode"]:checked').value; }
+  function getPhoticWave() { return document.querySelector('input[name="photicWave"]:checked').value; }
+
+  function buildTrack(p) {
+    track.innerHTML = "";
+    const total = p.total_duration;
+    // sample band color every ~2s of protocol time to build contiguous segments
+    const stepsCount = Math.max(24, Math.min(240, Math.round(total / 2)));
+    let segs = [];
+    for (let i = 0; i < stepsCount; i++) {
+      const t = (i / stepsCount) * total;
+      segs.push(bandOf(p.freqAt(t)).key);
+    }
+    let i = 0;
+    while (i < segs.length) {
+      let j = i;
+      while (j < segs.length && segs[j] === segs[i]) j++;
+      const div = document.createElement("div");
+      div.className = "seg";
+      div.style.width = (((j - i) / segs.length) * 100) + "%";
+      div.style.background = "var(--band-" + segs[i] + ")";
+      div.style.opacity = "0.55";
+      track.appendChild(div);
+      i = j;
+    }
+    const ph = document.createElement("div");
+    ph.className = "playhead";
+    ph.id = "playhead";
+    ph.style.left = "0%";
+    track.appendChild(ph);
+    trackTotalLabel.textContent = fmtTime(total);
+  }
+
+  function refreshRiskWarning() {
+    const wave = getPhoticWave();
+    const risky = photicEnable.checked && current && overlapsRiskBand(current);
+    riskWarning.style.display = risky ? "block" : "none";
+    riskWarning.querySelector("strong").nextSibling.textContent =
+      wave === "square"
+        ? " this protocol sweeps into the 3–60 Hz photosensitive-seizure caution band using a hard square-wave strobe. Do not use the strobe if you or the viewer has photosensitive epilepsy, migraine with aura, or another flash sensitivity. Not a medical device. Stop immediately if you feel unwell."
+        : " this protocol sweeps into the 3–60 Hz photosensitive-seizure caution band. The sine strobe carries lower risk than a hard flash but is not risk-free. Not a medical device. Stop immediately if you feel unwell.";
+  }
+
+  function refreshStartEnabled() {
+    const needsAck = photicEnable.checked && current && overlapsRiskBand(current);
+    startBtn.disabled = needsAck && !ackRisk.checked;
+  }
+
+  function loadProtocol() {
+    const key = protocolSelect.value;
+    current = PROTOCOLS[key].build(Number(carrierInput.value) || 200);
+    protocolDesc.textContent = current.description;
+    buildTrack(current);
+    timeReadout.textContent = "00:00 / " + fmtTime(current.total_duration);
+    const f0 = current.freqAt(0), b0 = bandOf(f0);
+    freqReadout.textContent = f0.toFixed(2) + " Hz";
+    freqReadout.style.color = b0.color;
+    bandReadout.textContent = b0.label;
+    const bd = current.stageBoundaries();
+    stageIndexReadout.textContent = "1 / " + bd.length;
+    stageNameReadout.textContent = bd[0].name;
+    overlayStageLabel.textContent = bd[0].name + " · " + f0.toFixed(2) + " Hz";
+    const firstCue = current.cueAt(0);
+    lastCueText = firstCue ? firstCue.text : null;
+    guidanceText.style.opacity = "1";
+    guidanceText.textContent = lastCueText || "";
+    overlayGuidanceText.textContent = lastCueText || "";
+    refreshRiskWarning();
+    refreshStartEnabled();
+  }
+
+  protocolSelect.addEventListener("change", loadProtocol);
+  carrierInput.addEventListener("change", loadProtocol);
+  photicEnable.addEventListener("change", () => { refreshRiskWarning(); refreshStartEnabled(); });
+  document.querySelectorAll('input[name="photicWave"]').forEach(el => el.addEventListener("change", () => { refreshRiskWarning(); refreshStartEnabled(); }));
+  ackRisk.addEventListener("change", refreshStartEnabled);
+
+  loadProtocol();
+
+  // ---- audio + haptic + photic engine ----
+
+  let nodes = null;
+  let rafId = null;
+  let startedAt = 0;
+
+  function buildGateCurve(p, controlRate, duty, edgeMs) {
+    const n = Math.max(1, Math.round(p.total_duration * controlRate));
+    const curve = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const t = i / controlRate;
+      const cycles = p.phaseAt(t) / (2 * Math.PI);
+      const cycleFrac = cycles - Math.floor(cycles);
+      const freqNow = Math.max(p.freqAt(t), 0.01);
+      const edgeFrac = Math.min(0.49, (edgeMs / 1000) * freqNow);
+      curve[i] = smoothedGate(cycleFrac, duty, edgeFrac);
+    }
+    return curve;
+  }
+
+  function buildVibrationPattern(gateCurve, controlRate, thresh) {
+    // Run-length encode gate>=thresh into [onMs, offMs, onMs, offMs, ...] -- the
+    // Vibration API's pattern format, which always starts with an "on" duration.
+    const dt = 1000 / controlRate;
+    const pattern = [];
+    let state = gateCurve[0] >= thresh;
+    if (!state) pattern.push(0); // leading zero-length "on" so the array still starts on-phase
+    let runMs = 0;
+    for (let i = 0; i < gateCurve.length; i++) {
+      const s = gateCurve[i] >= thresh;
+      if (s === state) { runMs += dt; }
+      else { pattern.push(Math.round(runMs)); state = s; runMs = dt; }
+    }
+    pattern.push(Math.round(runMs));
+    return pattern.length ? pattern : [0];
+  }
+
+  function scheduleFrequencyRamps(param, p, t0, offsetFn) {
+    const bd = p.stageBoundaries();
+    param.setValueAtTime(offsetFn(p.freqAt(0)), t0);
+    for (const s of bd) {
+      param.linearRampToValueAtTime(offsetFn(s.freq_start), t0 + s.start_s + 0.0001);
+      param.linearRampToValueAtTime(offsetFn(s.freq_end), t0 + s.end_s);
+    }
+  }
+
+  function startSession() {
+    if (running || !current) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const t0 = audioCtx.currentTime + 0.15;
+    const mode = getAudioMode();
+    const carrier = current.carrier_hz;
+    const master = audioCtx.createGain();
+    master.gain.value = 0.5;
+    master.connect(audioCtx.destination);
+
+    nodes = { oscs: [] };
+
+    if (mode === "binaural") {
+      const left = audioCtx.createOscillator(), right = audioCtx.createOscillator();
+      const merger = audioCtx.createChannelMerger(2);
+      left.type = "sine"; right.type = "sine";
+      scheduleFrequencyRamps(left.frequency, current, t0, f => carrier - f / 2);
+      scheduleFrequencyRamps(right.frequency, current, t0, f => carrier + f / 2);
+      left.connect(merger, 0, 0);
+      right.connect(merger, 0, 1);
+      merger.connect(master);
+      left.start(t0); right.start(t0);
+      nodes.oscs.push(left, right);
+      nodes.stopAt = t0 + current.total_duration;
+    } else if (mode === "monaural") {
+      const a = audioCtx.createOscillator(), b = audioCtx.createOscillator();
+      a.type = "sine"; b.type = "sine";
+      scheduleFrequencyRamps(a.frequency, current, t0, f => carrier - f / 2);
+      scheduleFrequencyRamps(b.frequency, current, t0, f => carrier + f / 2);
+      a.connect(master); b.connect(master);
+      a.start(t0); b.start(t0);
+      nodes.oscs.push(a, b);
+    } else {
+      const osc = audioCtx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = carrier;
+      const gate = audioCtx.createGain();
+      const curve = buildGateCurve(current, 100, 0.5, 6);
+      gate.gain.setValueCurveAtTime(curve, t0, current.total_duration);
+      osc.connect(gate).connect(master);
+      osc.start(t0);
+      nodes.oscs.push(osc);
+    }
+
+    if (hapticEnable.checked && "vibrate" in navigator) {
+      const gateCurve = buildGateCurve(current, 40, 0.5, 15);
+      hapticPattern = buildVibrationPattern(gateCurve, 40, 0.5);
+      navigator.vibrate(hapticPattern);
+    } else {
+      hapticPattern = null;
+    }
+
+    if (photicEnable.checked) {
+      const wave = getPhoticWave();
+      const n = Math.round(current.total_duration * 60);
+      const arr = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const t = i / 60;
+        const cycles = current.phaseAt(t) / (2 * Math.PI);
+        const frac = cycles - Math.floor(cycles);
+        arr[i] = wave === "sine" ? (0.5 - 0.5 * Math.cos(2 * Math.PI * frac)) : (frac < 0.5 ? 1 : 0);
+      }
+      nodes.photicCurve = arr;
+    }
+
+    startedAt = audioCtx.currentTime + 0.15;
+    running = true;
+    statusPill.textContent = "live";
+    statusPill.classList.add("live");
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+    fullscreenBtn.disabled = !photicEnable.checked;
+    protocolSelect.disabled = true;
+    carrierInput.disabled = true;
+
+    tick();
+  }
+
+  function stopSession() {
+    if (!running) return;
+    running = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    if (nodes) nodes.oscs.forEach(o => { try { o.stop(); } catch (e) {} });
+    if (audioCtx) audioCtx.close();
+    if ("vibrate" in navigator) navigator.vibrate(0);
+    strobeOverlay.classList.remove("active");
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    statusPill.textContent = "idle";
+    statusPill.classList.remove("live");
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    fullscreenBtn.disabled = true;
+    protocolSelect.disabled = false;
+    carrierInput.disabled = false;
+    loadProtocol();
+  }
+
+  function tick() {
+    if (!running) return;
+    const elapsed = Math.max(0, audioCtx.currentTime - startedAt);
+    const total = current.total_duration;
+    const clamped = Math.min(elapsed, total);
+    const freq = current.freqAt(clamped);
+    const band = bandOf(freq);
+    timeReadout.textContent = fmtTime(clamped) + " / " + fmtTime(total);
+    freqReadout.textContent = freq.toFixed(2) + " Hz";
+    freqReadout.style.color = band.color;
+    bandReadout.textContent = band.label;
+
+    const [s, off, idx] = current.locate(clamped);
+    const bd = current.stageBoundaries();
+    stageIndexReadout.textContent = (idx + 1) + " / " + bd.length;
+    stageNameReadout.textContent = s.name;
+    overlayStageLabel.textContent = s.name + " · " + freq.toFixed(2) + " Hz";
+
+    const cue = current.cueAt(clamped);
+    if (cue && cue.text !== lastCueText) {
+      lastCueText = cue.text;
+      guidanceText.style.opacity = "0";
+      overlayGuidanceText.style.opacity = "0";
+      setTimeout(() => {
+        guidanceText.textContent = cue.text;
+        overlayGuidanceText.textContent = cue.text;
+        guidanceText.style.opacity = "1";
+        overlayGuidanceText.style.opacity = "1";
+      }, 220);
+    }
+
+    const ph = document.getElementById("playhead");
+    if (ph) ph.style.left = ((clamped / total) * 100) + "%";
+
+    if (nodes && nodes.photicCurve) {
+      const idxF = Math.min(nodes.photicCurve.length - 1, Math.floor(clamped * 60));
+      const b = nodes.photicCurve[idxF];
+      const rgb = band.key === "beta" ? "94,184,255" : band.key === "alpha" ? "61,220,151" : band.key === "theta" ? "255,184,77" : "200,109,255";
+      const on = `rgb(${rgb})`;
+      swatch.style.background = `rgba(${rgb}, ${0.08 + 0.92 * b})`;
+      if (strobeOverlay.classList.contains("active")) {
+        strobeOverlay.style.background = `rgba(${rgb}, ${0.05 + 0.85 * b})`;
+      }
+    }
+
+    if (clamped >= total) { stopSession(); return; }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  startBtn.addEventListener("click", startSession);
+  stopBtn.addEventListener("click", stopSession);
+  fullscreenBtn.addEventListener("click", () => {
+    strobeOverlay.classList.add("active");
+    strobeOverlay.requestFullscreen?.().catch(() => {});
+  });
+  exitStrobeBtn.addEventListener("click", () => {
+    strobeOverlay.classList.remove("active");
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  });
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement) strobeOverlay.classList.remove("active");
+  });
+})();
+</script>
