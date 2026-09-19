@@ -169,5 +169,11 @@ BIL is designed as the semantic preprocessing layer for:
 
 ---
 
+## Design System
+
+Any UI built around BIL (docs sites, n8n dashboards, companion apps) should use the **Aquila design system** — an ADHD- and dyslexia-friendly accessible theme. See [`design/AQUILA_STYLE_GUIDE.md`](design/AQUILA_STYLE_GUIDE.md) for tokens, rationale, and a live demo.
+
+---
+
 *Part of the SANd-X ecosystem.*
 
