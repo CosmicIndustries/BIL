@@ -48,7 +48,7 @@ Everything is driven by four dicts in this one file, kept in sync **by hand** �
 - `_ENGLISH_LABELS` covers only 35 of 183 concepts (~19%) — `generate_english()` echoes the raw dotted concept path for the rest instead of natural English.
 - `ENGLISH_TO_SUES` has ~10 entries pointing at SUES terms that don't exist in `SUES_MAP` (e.g. `tell`, `keepgo`, `@answer`), which `map_sues_term()` silently passes through unresolved.
 
-The README's own roadmap (`v0.8 — ... token collision checker`) already flags this class of bug as unaddressed — it's a known gap, not a surprise. If you're adding vocabulary, check all four dicts by hand, and ideally add the collision/coverage checks above as a real test (`tests/test_bil_interpreter.py` — doesn't exist yet) before extending further, since nothing currently guards against making it worse.
+The README's own roadmap (`v0.8 — ... token collision checker`) already flags this class of bug as unaddressed — it's a known gap, not a surprise. `tests/test_bil_interpreter.py` now exists and encodes all of this: the invariant checks above are real tests marked `@unittest.expectedFailure` (so the suite stays green while documenting the exact defects), plus regression tests for what currently works (ambiguity resolution, SUES parsing, `n8n_handle`'s contract, and the 7/8 README demo-case pass rate). Run it with `python3 -m unittest tests.test_bil_interpreter -v`. If you fix one of the invariants, its test flips to an "unexpected success" — that's your signal to drop the `expectedFailure` marker and lock the fix in. If you're adding vocabulary, check all four dicts by hand and rerun this suite before extending further.
 
 ### Status (from README, may drift — verify before relying on it)
 
