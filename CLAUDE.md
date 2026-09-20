@@ -57,3 +57,9 @@ SUES parser and BIL-IR schema: stable. Token encoder: stable *modulo the collisi
 ## Vibroacoustic entrainment package
 
 Separate, self-contained, actually tested (stdlib `unittest`, not pytest — pytest isn't installed in this environment). Run `python3 -m unittest tests.test_vibroacoustic_entrainment -v` before changing `vibroacoustic_entrainment/*`.
+
+## design/rock5b/ (Aquila font install tooling)
+
+`install-aquila-font.sh` is a dry-run-by-default bash script that edits real system files (fontconfig, KDE `kdeglobals`, console font) on a physical ROCK 5B — nothing here is unit-testable in the usual sense, and `--apply` should never be run in a sandbox/CI container, since it genuinely writes to `/etc/fonts/conf.d`, `/usr/local/share/fonts`, and calls `apt-get`. `tests/test_rock5b.py` covers what *is* safe to check without a real device or root: `60-aquila.conf` is well-formed XML, the script's bash syntax is valid, and its dry-run argument handling (`--help`, an unknown flag, `--rollback` with no backup) behaves correctly. Run with `python3 -m unittest tests.test_rock5b -v` (never pass `--apply` to the script itself outside a real ROCK 5B).
+
+`60-aquila.conf`'s header comment previously used a literal `--` as a typographic dash, which is illegal inside an XML comment except as the closing `-->` — the same category of bug as the BIL `TOKEN_REGISTRY` delimiter collision above (a reserved delimiter sequence reused as ordinary content). Fixed to use an em dash; `test_is_well_formed_xml` guards against it recurring.
