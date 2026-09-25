@@ -28,64 +28,31 @@
   }
   @media (prefers-color-scheme: light) {
     :root:not([data-theme="dark"]) {
-      --bg: #f4f2ed;
-      --surface: #ffffff;
-      --surface-raised: #f9f8f5;
-      --surface-bright: #eeece6;
-      --border: #ddd9d0;
-      --border-focus: #c5c0b4;
-      --text: #3a3630;
-      --text-bright: #1c1a16;
-      --text-secondary: #7a7568;
-      --prompt: #b07010;
-      --prompt-bg: rgba(176,112,16,0.08);
-      --prompt-border: rgba(176,112,16,0.2);
-      --success: #16a34a;
-      --success-bg: rgba(22,163,74,0.06);
-      --success-border: rgba(22,163,74,0.15);
-      --warn: #ca8a04;
-      --warn-bg: rgba(202,138,4,0.06);
-      --error: #dc2626;
-      --error-bg: rgba(220,38,38,0.06);
-      --info: #2563eb;
-      --info-bg: rgba(37,99,235,0.05);
+      --bg: #f4f2ed; --surface: #ffffff; --surface-raised: #f9f8f5;
+      --surface-bright: #eeece6; --border: #ddd9d0; --border-focus: #c5c0b4;
+      --text: #3a3630; --text-bright: #1c1a16; --text-secondary: #7a7568;
+      --prompt: #b07010; --prompt-bg: rgba(176,112,16,0.08);
+      --prompt-border: rgba(176,112,16,0.2); --success: #16a34a;
+      --success-bg: rgba(22,163,74,0.06); --success-border: rgba(22,163,74,0.15);
+      --warn: #ca8a04; --warn-bg: rgba(202,138,4,0.06);
+      --error: #dc2626; --error-bg: rgba(220,38,38,0.06);
+      --info: #2563eb; --info-bg: rgba(37,99,235,0.05);
+      --btn-bg: #f0ede6; --btn-bg-hover: #e6e2d8; --input-bg: #faf9f6;
       color-scheme: light;
     }
   }
-  :root[data-theme="dark"] {
-    --bg: #0b0e14;
-    --surface: #131820;
-    --surface-raised: #1a2030;
-    --surface-bright: #212b3a;
-    --border: #1e2a3a;
-    --border-focus: #2d3f56;
-    --text: #c4cdd8;
-    --text-bright: #eaf0f6;
-    --text-secondary: #7a8a9e;
-    --prompt: #f0a830;
-    --prompt-bg: rgba(240,168,48,0.1);
-    --prompt-border: rgba(240,168,48,0.25);
-    --success: #34d399;
-    --success-bg: rgba(52,211,153,0.1);
-    --success-border: rgba(52,211,153,0.2);
-    color-scheme: dark;
-  }
+  :root[data-theme="dark"] { color-scheme: dark; }
   :root[data-theme="light"] {
-    --bg: #f4f2ed;
-    --surface: #ffffff;
-    --surface-raised: #f9f8f5;
-    --surface-bright: #eeece6;
-    --border: #ddd9d0;
-    --border-focus: #c5c0b4;
-    --text: #3a3630;
-    --text-bright: #1c1a16;
-    --text-secondary: #7a7568;
-    --prompt: #b07010;
-    --prompt-bg: rgba(176,112,16,0.08);
-    --prompt-border: rgba(176,112,16,0.2);
-    --success: #16a34a;
-    --success-bg: rgba(22,163,74,0.06);
-    --success-border: rgba(22,163,74,0.15);
+    --bg: #f4f2ed; --surface: #ffffff; --surface-raised: #f9f8f5;
+    --surface-bright: #eeece6; --border: #ddd9d0; --border-focus: #c5c0b4;
+    --text: #3a3630; --text-bright: #1c1a16; --text-secondary: #7a7568;
+    --prompt: #b07010; --prompt-bg: rgba(176,112,16,0.08);
+    --prompt-border: rgba(176,112,16,0.2); --success: #16a34a;
+    --success-bg: rgba(22,163,74,0.06); --success-border: rgba(22,163,74,0.15);
+    --warn: #ca8a04; --warn-bg: rgba(202,138,4,0.06);
+    --error: #dc2626; --error-bg: rgba(220,38,38,0.06);
+    --info: #2563eb; --info-bg: rgba(37,99,235,0.05);
+    --btn-bg: #f0ede6; --btn-bg-hover: #e6e2d8; --input-bg: #faf9f6;
     color-scheme: light;
   }
 
@@ -689,6 +656,18 @@
       '<span class="sub">close session</span></button>';
   }
 
+  const LINE_STYLES = {
+    "o-cmd": "color:var(--prompt);font-weight:500;margin-top:8px",
+    "o-ok": "color:var(--success)",
+    "o-warn": "color:var(--warn)",
+    "o-val": "color:var(--text-bright);font-weight:500",
+  };
+
+  function lineToHtml(l) {
+    const s = LINE_STYLES[l.cls] || "";
+    return '<div'+(s ? ' style="'+s+'"' : '')+'>'+esc(l.text)+'</div>';
+  }
+
   function runCmd(cmd) {
     const sim = SIMS[cmd];
     if (!sim) return;
@@ -696,50 +675,20 @@
     outputs[activeHostIdx].push(...sim);
     const ob = document.getElementById("outputBody");
     if (ob) {
-      sim.forEach(line => {
-        const div = document.createElement("div");
-        div.className = line.cls;
-        div.textContent = line.text;
-        if (line.cls === "o-cmd") {
-          div.innerHTML = esc(line.text);
-          div.style.color = "var(--prompt)";
-          div.style.fontWeight = "500";
-          div.style.marginTop = "8px";
-        } else if (line.cls === "o-ok") {
-          div.innerHTML = esc(line.text);
-          div.style.color = "var(--success)";
-        } else if (line.cls === "o-warn") {
-          div.innerHTML = esc(line.text);
-          div.style.color = "var(--warn)";
-        } else if (line.cls === "o-val") {
-          div.innerHTML = esc(line.text);
-          div.style.color = "var(--text-bright)";
-          div.style.fontWeight = "500";
-        }
-        ob.appendChild(div);
-      });
+      ob.insertAdjacentHTML("beforeend", sim.map(lineToHtml).join(""));
       ob.scrollTop = ob.scrollHeight;
     }
-
-    // Flash the button
     const btnEl = app.querySelector('[data-cmd="'+cmd+'"]');
     if (btnEl) {
       btnEl.style.background = "var(--surface-bright)";
-      setTimeout(() => { btnEl.style.background = ""; }, 200);
+      setTimeout(function() { btnEl.style.background = ""; }, 200);
     }
   }
 
   function renderOutput(idx) {
-    const lines = outputs[idx];
+    var lines = outputs[idx];
     if (!lines || lines.length === 0) return "";
-    return lines.map(l => {
-      let style = "";
-      if (l.cls === "o-cmd") style = "color:var(--prompt);font-weight:500;margin-top:8px";
-      else if (l.cls === "o-ok") style = "color:var(--success)";
-      else if (l.cls === "o-warn") style = "color:var(--warn)";
-      else if (l.cls === "o-val") style = "color:var(--text-bright);font-weight:500";
-      return '<div style="'+style+'">'+esc(l.text)+'</div>';
-    }).join("");
+    return lines.map(lineToHtml).join("");
   }
 
   // ── Modal ──
