@@ -1,409 +1,358 @@
 <title>Phase Console</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Big+Shoulders+Display:wght@700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
   :root {
-    --bg: #0b0e14;
-    --surface: #131820;
-    --surface-raised: #1a2030;
-    --surface-bright: #212b3a;
-    --border: #1e2a3a;
-    --border-focus: #2d3f56;
-    --text: #c4cdd8;
-    --text-bright: #eaf0f6;
-    --text-secondary: #7a8a9e;
-    --prompt: #f0a830;
-    --prompt-bg: rgba(240,168,48,0.1);
-    --prompt-border: rgba(240,168,48,0.25);
-    --success: #34d399;
-    --success-bg: rgba(52,211,153,0.1);
-    --success-border: rgba(52,211,153,0.2);
-    --warn: #fbbf24;
-    --warn-bg: rgba(251,191,36,0.08);
-    --error: #f87171;
-    --error-bg: rgba(248,113,113,0.1);
-    --info: #60a5fa;
-    --info-bg: rgba(96,165,250,0.08);
+    --bg: #0a0a12;
+    --surface: #12121e;
+    --surface-raised: #1a1a2e;
+    --border: #252540;
+    --text: #c8c8e0;
+    --text-bright: #eeeef8;
+    --text-dim: #5a5a80;
+    --amber: #f0a830;
+    --amber-dim: rgba(240,168,48,0.12);
+    --amber-border: rgba(240,168,48,0.3);
+    --lavender: #bb88cc;
+    --lavender-dim: rgba(187,136,204,0.1);
+    --lavender-border: rgba(187,136,204,0.25);
+    --blue: #5599cc;
+    --blue-dim: rgba(85,153,204,0.1);
+    --blue-border: rgba(85,153,204,0.25);
+    --teal: #44ccaa;
+    --teal-dim: rgba(68,204,170,0.1);
+    --teal-border: rgba(68,204,170,0.2);
+    --red: #cc5555;
+    --red-dim: rgba(204,85,85,0.1);
+    --warn: #e8b830;
+    --pill-r: 20px;
     color-scheme: dark;
   }
   @media (prefers-color-scheme: light) {
     :root:not([data-theme="dark"]) {
-      --bg: #f4f2ed; --surface: #ffffff; --surface-raised: #f9f8f5;
-      --surface-bright: #eeece6; --border: #ddd9d0; --border-focus: #c5c0b4;
-      --text: #3a3630; --text-bright: #1c1a16; --text-secondary: #7a7568;
-      --prompt: #b07010; --prompt-bg: rgba(176,112,16,0.08);
-      --prompt-border: rgba(176,112,16,0.2); --success: #16a34a;
-      --success-bg: rgba(22,163,74,0.06); --success-border: rgba(22,163,74,0.15);
-      --warn: #ca8a04; --warn-bg: rgba(202,138,4,0.06);
-      --error: #dc2626; --error-bg: rgba(220,38,38,0.06);
-      --info: #2563eb; --info-bg: rgba(37,99,235,0.05);
-      --btn-bg: #f0ede6; --btn-bg-hover: #e6e2d8; --input-bg: #faf9f6;
+      --bg: #eeeae4; --surface: #faf8f4; --surface-raised: #f0ede6;
+      --border: #d0ccc4; --text: #2c2a26; --text-bright: #141310;
+      --text-dim: #8a8678; --amber: #a06808; --amber-dim: rgba(160,104,8,0.08);
+      --amber-border: rgba(160,104,8,0.2); --lavender: #7a5088;
+      --lavender-dim: rgba(122,80,136,0.06); --lavender-border: rgba(122,80,136,0.15);
+      --blue: #2a6090; --blue-dim: rgba(42,96,144,0.06);
+      --blue-border: rgba(42,96,144,0.15); --teal: #1a8868;
+      --teal-dim: rgba(26,136,104,0.06); --teal-border: rgba(26,136,104,0.12);
+      --red: #b03030; --red-dim: rgba(176,48,48,0.06); --warn: #a08010;
       color-scheme: light;
     }
   }
   :root[data-theme="dark"] { color-scheme: dark; }
   :root[data-theme="light"] {
-    --bg: #f4f2ed; --surface: #ffffff; --surface-raised: #f9f8f5;
-    --surface-bright: #eeece6; --border: #ddd9d0; --border-focus: #c5c0b4;
-    --text: #3a3630; --text-bright: #1c1a16; --text-secondary: #7a7568;
-    --prompt: #b07010; --prompt-bg: rgba(176,112,16,0.08);
-    --prompt-border: rgba(176,112,16,0.2); --success: #16a34a;
-    --success-bg: rgba(22,163,74,0.06); --success-border: rgba(22,163,74,0.15);
-    --warn: #ca8a04; --warn-bg: rgba(202,138,4,0.06);
-    --error: #dc2626; --error-bg: rgba(220,38,38,0.06);
-    --info: #2563eb; --info-bg: rgba(37,99,235,0.05);
-    --btn-bg: #f0ede6; --btn-bg-hover: #e6e2d8; --input-bg: #faf9f6;
+    --bg: #eeeae4; --surface: #faf8f4; --surface-raised: #f0ede6;
+    --border: #d0ccc4; --text: #2c2a26; --text-bright: #141310;
+    --text-dim: #8a8678; --amber: #a06808; --amber-dim: rgba(160,104,8,0.08);
+    --amber-border: rgba(160,104,8,0.2); --lavender: #7a5088;
+    --lavender-dim: rgba(122,80,136,0.06); --lavender-border: rgba(122,80,136,0.15);
+    --blue: #2a6090; --blue-dim: rgba(42,96,144,0.06);
+    --blue-border: rgba(42,96,144,0.15); --teal: #1a8868;
+    --teal-dim: rgba(26,136,104,0.06); --teal-border: rgba(26,136,104,0.12);
+    --red: #b03030; --red-dim: rgba(176,48,48,0.06); --warn: #a08010;
     color-scheme: light;
   }
 
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
-    padding-inline: 16px;
-    padding-block: 0;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    max-width: 520px;
-    margin: 0 auto;
-    -webkit-user-select: none;
-    user-select: none;
+    background: var(--bg); color: var(--text);
+    font-family: 'Exo 2', system-ui, sans-serif;
+    font-size: 14px; line-height: 1.5;
+    padding-inline: 16px; padding-block: 0;
+    min-height: 100vh; display: flex; flex-direction: column;
   }
+
+  /* ── LCARS pill accents ── */
+  .pill { border-radius: 0 var(--pill-r) var(--pill-r) 0; }
+  .pill-l { border-radius: var(--pill-r) 0 0 var(--pill-r); }
+  .pill-full { border-radius: var(--pill-r); }
 
   /* ── Header ── */
   .header {
-    padding: 16px 0 12px;
-    position: sticky;
-    top: env(safe-area-inset-top, 0px);
-    background: var(--bg);
-    z-index: 10;
+    display: flex; align-items: stretch; gap: 0;
+    padding: 12px 0 0;
+    position: sticky; top: env(safe-area-inset-top, 0px);
+    background: var(--bg); z-index: 10;
   }
-  .header-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
+  .header-accent {
+    width: 6px; background: var(--amber);
+    border-radius: var(--pill-r) 0 0 var(--pill-r);
+    flex-shrink: 0;
+  }
+  .header-main {
+    flex: 1; display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface);
+    border: 1px solid var(--border); border-left: none;
+    border-radius: 0 var(--pill-r) var(--pill-r) 0;
+    padding: 10px 16px 10px 12px;
+    gap: 12px;
   }
   .wordmark {
-    font-family: 'Big Shoulders Display', system-ui, sans-serif;
-    font-weight: 800; font-size: 22px;
-    color: var(--text-bright);
-    letter-spacing: 0.02em;
+    font-weight: 800; font-size: 18px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--amber); white-space: nowrap;
   }
-  .wordmark span { color: var(--prompt); }
-  .header-meta {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 12px; color: var(--text-secondary);
+  .wordmark .sep { color: var(--lavender); }
+  .header-right {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 11px; color: var(--text-dim);
   }
-  .conn-pill {
+  .status-pill {
     display: inline-flex; align-items: center; gap: 5px;
-    font-size: 11px; font-weight: 600;
-    padding: 4px 10px; border-radius: 99px;
-    letter-spacing: 0.03em;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 3px 10px 3px 8px;
+    border-radius: var(--pill-r);
   }
-  .conn-pill.on {
-    background: var(--success-bg); color: var(--success);
-    border: 1px solid var(--success-border);
-  }
-  .conn-pill.off {
-    background: var(--error-bg); color: var(--error);
-    border: 1px solid rgba(248,113,113,0.2);
-  }
-  .conn-pill .dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: currentColor;
-  }
+  .status-pill.on { background: var(--teal-dim); color: var(--teal); border: 1px solid var(--teal-border); }
+  .status-pill.off { background: var(--red-dim); color: var(--red); border: 1px solid rgba(204,85,85,0.2); }
+  .status-pill .sd { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
-  /* ── Host tabs ── */
+  /* ── Host bar ── */
   .host-bar {
     display: flex; gap: 6px; align-items: center;
-    overflow-x: auto; -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; padding-bottom: 2px;
+    padding: 10px 0; overflow-x: auto;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
   }
   .host-bar::-webkit-scrollbar { display: none; }
   .host-tab {
     display: inline-flex; align-items: center; gap: 6px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 8px 14px;
-    font-family: inherit; font-size: 13px; font-weight: 500;
-    color: var(--text-secondary);
-    cursor: pointer; white-space: nowrap;
-    transition: all 0.15s;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 0 var(--pill-r) var(--pill-r) 0;
+    padding: 8px 14px 8px 10px;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    color: var(--text-dim); cursor: pointer; white-space: nowrap;
+    transition: all 0.15s; border-left: 3px solid var(--border);
   }
   .host-tab:active { transform: scale(0.97); }
   .host-tab.active {
-    background: var(--prompt-bg);
-    border-color: var(--prompt-border);
-    color: var(--prompt);
+    background: var(--amber-dim); border-left-color: var(--amber);
+    border-color: var(--amber-border); border-left-color: var(--amber);
+    color: var(--amber);
   }
-  .host-tab .hdot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: var(--text-secondary); opacity: 0.4;
-  }
-  .host-tab.active .hdot { background: var(--prompt); opacity: 1; }
-  .host-tab.connected .hdot { background: var(--success); opacity: 1; }
-  .add-host-tab {
+  .host-tab.connected { border-left-color: var(--teal); }
+  .host-tab.connected.active { border-left-color: var(--amber); }
+  .add-btn {
     display: inline-flex; align-items: center; justify-content: center;
     width: 36px; height: 36px; flex-shrink: 0;
-    background: var(--surface);
-    border: 1px dashed var(--border);
-    border-radius: 10px;
-    font-size: 18px; color: var(--text-secondary);
-    cursor: pointer;
+    background: var(--surface); border: 1px dashed var(--border);
+    border-radius: var(--pill-r);
+    font-size: 18px; color: var(--text-dim); cursor: pointer;
   }
-  .add-host-tab:active { transform: scale(0.95); }
+  .add-btn:active { transform: scale(0.95); }
 
-  /* ── Sections ── */
-  .section {
-    margin-top: 16px;
+  /* ── Layout: desktop vs mobile ── */
+  .layout {
+    display: flex; flex-direction: column; gap: 10px;
+    flex: 1; padding-bottom: 16px;
   }
-  .section-label {
-    font-size: 10px; font-weight: 700;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--text-secondary);
+  @media (min-width: 768px) {
+    .layout { flex-direction: row; }
+    .layout .sidebar { width: 280px; flex-shrink: 0; }
+    .layout .main { flex: 1; min-width: 0; }
+  }
+
+  /* ── Section / group ── */
+  .group {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 0 14px 14px 0; overflow: hidden;
+    margin-bottom: 8px; border-left: 3px solid var(--border);
+  }
+  .group.amber { border-left-color: var(--amber); }
+  .group.lavender { border-left-color: var(--lavender); }
+  .group.blue { border-left-color: var(--blue); }
+  .group.teal { border-left-color: var(--teal); }
+  .group-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-dim);
+  }
+  .group-head .accent { color: var(--amber); }
+
+  /* ── Control buttons ── */
+  .cmd-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 6px; padding: 0 8px 8px;
+  }
+  @media (min-width: 768px) {
+    .cmd-grid { grid-template-columns: 1fr 1fr 1fr; }
+  }
+  .cmd-btn {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border); border-radius: 0 10px 10px 0;
+    border-left: 2px solid var(--border);
+    padding: 10px 10px 10px 8px;
+    cursor: pointer; transition: all 0.12s;
+    font-family: inherit; color: var(--text);
+  }
+  .cmd-btn:active { transform: scale(0.97); background: var(--border); }
+  .cmd-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+  .cmd-btn .key {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 22px; height: 22px; border-radius: 4px;
+    background: var(--bg); border: 1px solid var(--border);
+    font-size: 10px; font-weight: 700; color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace; flex-shrink: 0;
+  }
+  .cmd-btn .lbl {
+    display: flex; flex-direction: column; min-width: 0;
+  }
+  .cmd-btn .name {
+    font-size: 12px; font-weight: 600; color: var(--text-bright);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cmd-btn .desc {
+    font-size: 10px; color: var(--text-dim);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cmd-btn.accent { border-left-color: var(--amber); }
+  .cmd-btn.accent .key { border-color: var(--amber-border); color: var(--amber); }
+  .cmd-btn.play { border-left-color: var(--teal); }
+  .cmd-btn.play .key { border-color: var(--teal-border); color: var(--teal); }
+
+  /* ── Connect card ── */
+  .connect-card {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--amber-dim); border: 1px solid var(--amber-border);
+    border-radius: 0 14px 14px 0; border-left: 3px solid var(--amber);
+    padding: 16px; cursor: pointer; transition: all 0.12s;
     margin-bottom: 8px;
-    padding-left: 2px;
   }
-
-  /* ── Control cards ── */
-  .controls {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-  .ctrl-btn {
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 6px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 16px 10px;
-    cursor: pointer;
-    transition: all 0.15s;
-    min-height: 80px;
-    text-align: center;
-  }
-  .ctrl-btn:active { transform: scale(0.96); background: var(--surface-raised); }
-  .ctrl-btn:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
-  .ctrl-btn .icon {
-    font-size: 24px; line-height: 1;
-  }
-  .ctrl-btn .label {
-    font-family: inherit; font-size: 12px; font-weight: 600;
-    color: var(--text-bright);
-    letter-spacing: 0.01em;
-  }
-  .ctrl-btn .sub {
-    font-size: 10px; color: var(--text-secondary);
-    margin-top: -2px;
-  }
-  .ctrl-btn.wide {
-    grid-column: 1 / -1;
-    flex-direction: row;
-    gap: 12px;
-    padding: 14px 18px;
-    min-height: auto;
-    text-align: left;
-  }
-  .ctrl-btn.wide .labels { display: flex; flex-direction: column; }
-  .ctrl-btn.accent {
-    background: var(--prompt-bg);
-    border-color: var(--prompt-border);
-  }
-  .ctrl-btn.accent .icon { color: var(--prompt); }
-  .ctrl-btn.success-tint {
-    background: var(--success-bg);
-    border-color: var(--success-border);
-  }
-  .ctrl-btn.success-tint .icon { color: var(--success); }
+  .connect-card:active { transform: scale(0.98); }
+  .connect-card .cc-icon { font-size: 22px; }
+  .connect-card .cc-text { font-size: 14px; font-weight: 700; color: var(--amber); }
+  .connect-card .cc-sub { font-size: 11px; color: var(--text-dim); }
 
   /* ── Output panel ── */
-  .output-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    overflow: hidden;
+  .output-panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 0 14px 14px 0; border-left: 3px solid var(--blue);
+    overflow: hidden; display: flex; flex-direction: column;
   }
-  .output-header {
+  @media (min-width: 768px) {
+    .output-panel { flex: 1; min-height: 200px; }
+  }
+  .output-head {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 14px;
+    padding: 8px 12px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-dim);
     border-bottom: 1px solid var(--border);
   }
-  .output-header span {
-    font-size: 11px; font-weight: 600; color: var(--text-secondary);
-    letter-spacing: 0.04em; text-transform: uppercase;
+  .output-head button {
+    background: none; border: none; font-family: inherit;
+    font-size: 10px; color: var(--text-dim); cursor: pointer; padding: 2px 6px;
   }
-  .output-clear {
-    background: none; border: none;
-    font-family: inherit; font-size: 11px;
-    color: var(--text-secondary); cursor: pointer;
-    padding: 2px 6px;
+  .output-head button:hover { color: var(--text); }
+  .out-body {
+    padding: 8px 12px; max-height: 220px; overflow-y: auto;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11.5px;
+    line-height: 1.55; -webkit-user-select: text; user-select: text;
   }
-  .output-clear:hover { color: var(--text); }
-  .output-body {
-    padding: 10px 14px;
-    max-height: 180px;
-    overflow-y: auto;
-    font-family: 'Inter', monospace;
-    font-size: 11.5px;
-    line-height: 1.55;
-    color: var(--text);
-    -webkit-user-select: text;
-    user-select: text;
+  @media (min-width: 768px) { .out-body { max-height: none; flex: 1; } }
+  .out-body:empty::after {
+    content: "Run a command to see output"; color: var(--text-dim); font-style: italic;
   }
-  .output-body:empty::after {
-    content: "Run a command to see output here";
-    color: var(--text-secondary);
-    font-style: italic;
-  }
-  .output-body .o-cmd {
-    color: var(--prompt); font-weight: 500;
-    margin-top: 6px;
-  }
-  .output-body .o-cmd:first-child { margin-top: 0; }
-  .output-body .o-line { color: var(--text); }
-  .output-body .o-ok { color: var(--success); }
-  .output-body .o-warn { color: var(--warn); }
-  .output-body .o-val { color: var(--text-bright); font-weight: 500; }
 
-  /* ── Tip banner ── */
-  .tip-banner {
+  /* ── Keyboard help (desktop) ── */
+  .kb-help {
+    display: none; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 0 14px 14px 0; border-left: 3px solid var(--lavender);
+    padding: 10px 12px; font-size: 11px; color: var(--text-dim);
+    line-height: 1.6;
+  }
+  @media (min-width: 768px) { .kb-help { display: block; } }
+  .kb-help kbd {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px; padding: 0 4px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 3px; font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; font-weight: 700; color: var(--lavender);
+  }
+
+  /* ── Tip ── */
+  .tip {
     display: flex; align-items: flex-start; gap: 10px;
-    background: var(--info-bg);
-    border: 1px solid rgba(96,165,250,0.15);
-    border-radius: 12px;
-    padding: 12px 14px;
-    margin-top: 16px;
-    font-size: 12.5px;
-    color: var(--text);
-    line-height: 1.5;
+    background: var(--lavender-dim); border: 1px solid var(--lavender-border);
+    border-radius: 0 14px 14px 0; border-left: 3px solid var(--lavender);
+    padding: 10px 12px; font-size: 12px; color: var(--text); margin-bottom: 8px;
   }
-  .tip-banner .tip-icon {
-    font-size: 16px; flex-shrink: 0; margin-top: 1px;
+  .tip strong { color: var(--text-bright); font-weight: 600; }
+  .tip .close {
+    background: none; border: none; color: var(--text-dim);
+    font-size: 16px; cursor: pointer; margin-left: auto; padding: 0; line-height: 1;
   }
-  .tip-banner .tip-text strong { color: var(--text-bright); font-weight: 600; }
-  .tip-banner .dismiss {
-    background: none; border: none;
-    color: var(--text-secondary); font-size: 16px;
-    cursor: pointer; padding: 0; margin-left: auto;
-    flex-shrink: 0; line-height: 1;
-  }
-  .tip-banner .dismiss:hover { color: var(--text); }
 
-  /* ── Connect modal ── */
-  .modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.6);
-    z-index: 100;
-    display: flex; align-items: flex-end; justify-content: center;
+  /* ── Modal ── */
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    z-index: 100; display: flex; align-items: flex-end; justify-content: center;
     padding: 16px;
   }
-  .modal-overlay[hidden] { display: none; }
-  .modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px 20px 14px 14px;
-    width: 100%; max-width: 420px;
-    padding: 20px;
+  .modal-bg[hidden] { display: none; }
+  @media (min-width: 768px) { .modal-bg { align-items: center; } }
+  .modal-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px 20px 14px 14px; width: 100%; max-width: 400px;
+    padding: 20px; border-top: 3px solid var(--amber);
   }
-  .modal h3 {
-    font-size: 16px; font-weight: 700;
-    color: var(--text-bright);
-    margin: 0 0 4px;
+  @media (min-width: 768px) { .modal-box { border-radius: 14px; border-top: 3px solid var(--amber); } }
+  .modal-box h3 { font-size: 16px; font-weight: 700; color: var(--text-bright); margin: 0 0 4px; }
+  .modal-box p { font-size: 12px; color: var(--text-dim); margin: 0 0 14px; }
+  .mf { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+  .mf label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--text-dim);
   }
-  .modal p {
-    font-size: 12.5px; color: var(--text-secondary);
-    margin: 0 0 16px;
+  .mf input {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; font-family: inherit; font-size: 14px;
+    color: var(--text); outline: none;
   }
-  .modal-field {
-    display: flex; flex-direction: column; gap: 6px;
-    margin-bottom: 12px;
+  .mf input:focus { border-color: var(--amber-border); }
+  .mf input::placeholder { color: var(--text-dim); }
+  .m-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .m-actions button {
+    flex: 1; padding: 11px; border-radius: 0 10px 10px 0;
+    font-family: inherit; font-size: 13px; font-weight: 700;
+    cursor: pointer; border: none; letter-spacing: 0.02em;
   }
-  .modal-field label {
-    font-size: 11px; font-weight: 600;
-    color: var(--text-secondary);
-    letter-spacing: 0.04em; text-transform: uppercase;
-  }
-  .modal-field input {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 14px;
-    font-family: inherit; font-size: 14px;
-    color: var(--text);
-    outline: none;
-  }
-  .modal-field input:focus { border-color: var(--prompt-border); }
-  .modal-field input::placeholder { color: var(--text-secondary); }
-  .modal-actions {
-    display: flex; gap: 8px; margin-top: 16px;
-  }
-  .modal-actions button {
-    flex: 1; padding: 12px;
-    border-radius: 10px;
-    font-family: inherit; font-size: 14px; font-weight: 600;
-    cursor: pointer; border: none;
-  }
-  .modal-actions .cancel {
-    background: var(--surface-bright);
-    color: var(--text);
-  }
-  .modal-actions .connect {
-    background: var(--prompt);
-    color: var(--bg);
-  }
-  .modal-actions button:active { transform: scale(0.98); }
+  .m-actions .m-cancel { background: var(--surface-raised); color: var(--text); border-radius: 10px 0 0 10px; }
+  .m-actions .m-ok { background: var(--amber); color: var(--bg); }
+  .m-actions button:active { transform: scale(0.98); }
 
-  /* ── Footer spacing ── */
-  .footer-space { height: 24px; flex-shrink: 0; }
+  .spacer { height: 16px; flex-shrink: 0; }
 
-  @media (min-width: 520px) {
-    .controls { grid-template-columns: 1fr 1fr 1fr; }
-  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
 <div class="header">
-  <div class="header-top">
-    <div class="wordmark">PHASE<span>·</span>CONSOLE</div>
-    <div class="header-meta">
+  <div class="header-accent"></div>
+  <div class="header-main">
+    <div class="wordmark">Phase<span class="sep"> / </span>Console</div>
+    <div class="header-right">
       <span id="clock">--:--</span>
-      <div class="conn-pill off" id="connPill">
-        <div class="dot"></div>
-        <span id="connText">offline</span>
-      </div>
+      <div class="status-pill off" id="sPill"><span class="sd"></span><span id="sText">offline</span></div>
     </div>
   </div>
-  <div class="host-bar" id="hostBar"></div>
 </div>
 
-<div id="app"></div>
+<div class="host-bar" id="hostBar"></div>
+<div class="layout" id="layout"></div>
 
-<div class="modal-overlay" id="addModal" hidden>
-  <div class="modal">
+<div class="modal-bg" id="modal" hidden>
+  <div class="modal-box">
     <h3>Add Host</h3>
-    <p>Enter the SSH connection for your machine.</p>
-    <div class="modal-field">
-      <label>User</label>
-      <input type="text" id="modalUser" placeholder="htpc" autocomplete="off" autocapitalize="off" spellcheck="false">
-    </div>
-    <div class="modal-field">
-      <label>Hostname / IP</label>
-      <input type="text" id="modalHost" placeholder="192.168.1.100" autocomplete="off" autocapitalize="off" spellcheck="false">
-    </div>
-    <div class="modal-field">
-      <label>Label (optional)</label>
-      <input type="text" id="modalLabel" placeholder="Living room HTPC" autocomplete="off" spellcheck="false">
-    </div>
-    <div class="modal-actions">
-      <button class="cancel" id="modalCancel">Cancel</button>
-      <button class="connect" id="modalConnect">Add Host</button>
+    <p>SSH connection for your machine or a Bluetooth keyboard host.</p>
+    <div class="mf"><label>User</label><input type="text" id="mUser" placeholder="htpc" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+    <div class="mf"><label>Hostname / IP</label><input type="text" id="mHost" placeholder="192.168.1.100" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+    <div class="mf"><label>Label</label><input type="text" id="mLabel" placeholder="Living room HTPC" autocomplete="off" spellcheck="false"></div>
+    <div class="m-actions">
+      <button class="m-cancel" id="mCancel">Cancel</button>
+      <button class="m-ok" id="mOk">Add</button>
     </div>
   </div>
 </div>
@@ -412,318 +361,267 @@
 (function () {
   "use strict";
 
-  // ── State ──
-  let hosts = loadHosts();
-  let activeHostIdx = 0;
-  let connected = {};
-  let outputs = {};
-  let tipDismissed = false;
-  try { tipDismissed = localStorage.getItem("pc_tip_dismissed") === "1"; } catch(e) {}
+  var hosts, activeIdx, connectedSet, outputLog, tipOff;
 
-  const TIPS = [
-    { icon: "💡", html: '<strong>Tip:</strong> Tap a command button to run it on the selected host. Output appears at the bottom.' },
-    { icon: "🎵", html: '<strong>Audio:</strong> Use <strong>Detect</strong> to check your system\'s sample rate and format, then <strong>Render</strong> to generate a matched session.' },
-    { icon: "⚡", html: '<strong>Quick start:</strong> Detect → Render → Play. Three taps to an entrainment session matched to your HTPC\'s native audio.' },
-    { icon: "🔗", html: '<strong>Hosts:</strong> Tap <strong>+</strong> to add a new machine. Your saved hosts are remembered between visits.' },
+  function init() {
+    hosts = loadStore("pc_hosts", [{ user:"htpc", host:"htpc", label:"HTPC" }]);
+    activeIdx = 0;
+    connectedSet = {};
+    outputLog = {};
+    tipOff = loadStore("pc_tip_off", false);
+  }
+
+  function loadStore(k, fallback) {
+    try { var v = localStorage.getItem(k); return v !== null ? JSON.parse(v) : fallback; }
+    catch(e) { return fallback; }
+  }
+  function saveStore(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} }
+  function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+  var CMDS = [
+    { id:"detect", key:"1", name:"Detect",  desc:"sink + format", group:"audio" },
+    { id:"volume", key:"2", name:"Volume",  desc:"levels + mute", group:"audio" },
+    { id:"info",   key:"3", name:"Engine",  desc:"audio report",  group:"audio" },
+    { id:"render", key:"4", name:"Render",  desc:"focus10 native",group:"entrainment", accent:"accent" },
+    { id:"play",   key:"5", name:"Play",    desc:"start session", group:"entrainment", accent:"play" },
+    { id:"stop",   key:"6", name:"Stop",    desc:"kill playback", group:"entrainment" },
+    { id:"uptime", key:"7", name:"Uptime",  desc:"kernel info",   group:"system" },
+    { id:"memory", key:"8", name:"Memory",  desc:"RAM usage",     group:"system" },
+    { id:"disk",   key:"9", name:"Disk",    desc:"storage free",  group:"system" },
+    { id:"temp",   key:"0", name:"Temp",    desc:"CPU core",      group:"system" },
+    { id:"top",    key:"T", name:"Top",     desc:"by memory",     group:"system" },
   ];
-  let currentTip = Math.floor(Math.random() * TIPS.length);
 
-  function loadHosts() {
-    try {
-      const raw = localStorage.getItem("pc_hosts");
-      if (raw) return JSON.parse(raw);
-    } catch(e) {}
-    return [{ user:"htpc", host:"htpc", label:"HTPC" }];
-  }
-  function saveHosts() {
-    try { localStorage.setItem("pc_hosts", JSON.stringify(hosts)); } catch(e) {}
-  }
-
-  function esc(s) { return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-
-  // ── Simulated outputs ──
-  const SIMS = {
-    "detect": [
-      { cls:"o-cmd", text:"$ pactl info | grep -E 'Server|Default Sink'" },
-      { cls:"o-line", text:"Server Name: PipeWire (version 1.0)" },
-      { cls:"o-val", text:"Default Sink: alsa_output.pci-0000_00_1f.3.hdmi-stereo" },
-      { cls:"o-cmd", text:"$ pactl list sinks short" },
-      { cls:"o-val", text:"60  hdmi-stereo  PipeWire  s32le 2ch 48000Hz  RUNNING" },
+  var SIMS = {
+    detect: [
+      { c:1, t:"$ pactl info | grep -E 'Server|Default Sink'" },
+      { c:0, t:"Server Name: PipeWire (version 1.0)" },
+      { c:2, t:"Default Sink: alsa_output.pci-0000_00_1f.3.hdmi-stereo" },
+      { c:1, t:"$ pactl list sinks short" },
+      { c:2, t:"60  hdmi-stereo  PipeWire  s32le 2ch 48000Hz  RUNNING" },
     ],
-    "volume": [
-      { cls:"o-cmd", text:"$ pactl get-sink-volume @DEFAULT_SINK@" },
-      { cls:"o-val", text:"Volume: L 40% / R 40%  (-23.88 dB)" },
-      { cls:"o-cmd", text:"$ pactl get-sink-mute @DEFAULT_SINK@" },
-      { cls:"o-ok", text:"Mute: no" },
+    volume: [
+      { c:1, t:"$ pactl get-sink-volume @DEFAULT_SINK@" },
+      { c:2, t:"Volume: L 40% / R 40%  (-23.88 dB)" },
+      { c:1, t:"$ pactl get-sink-mute @DEFAULT_SINK@" },
+      { c:3, t:"Mute: no" },
     ],
-    "info": [
-      { cls:"o-cmd", text:"$ python3 -m vibroacoustic_entrainment.cli --show-audio-info" },
-      { cls:"o-line", text:"System audio output:" },
-      { cls:"o-val", text:"  Sink:    hdmi-stereo (PipeWire)" },
-      { cls:"o-val", text:"  Rate:    48000 Hz" },
-      { cls:"o-val", text:"  Format:  s32le (32-bit)" },
-      { cls:"o-val", text:"  Ch:      2    Vol: 40%    Muted: no" },
+    info: [
+      { c:1, t:"$ python3 -m vibroacoustic_entrainment.cli --show-audio-info" },
+      { c:0, t:"System audio output:" },
+      { c:2, t:"  Sink: hdmi-stereo (PipeWire)  Rate: 48000 Hz" },
+      { c:2, t:"  Format: s32le (32-bit)  Ch: 2  Vol: 40%" },
     ],
-    "render": [
-      { cls:"o-cmd", text:"$ python3 -m vibroacoustic_entrainment.cli --match-system --protocol focus10 --out-dir ~/entrainment_out/" },
-      { cls:"o-ok", text:"  -> Using: 48000 Hz, 32-bit" },
-      { cls:"o-val", text:"Rendered 'gateway_focus10' (1800s) -> ~/entrainment_out/" },
-      { cls:"o-line", text:"  audio.wav  haptic.wav  photic_events.json" },
+    render: [
+      { c:1, t:"$ python3 -m vibroacoustic_entrainment.cli --match-system --protocol focus10" },
+      { c:3, t:"  -> Using: 48000 Hz, 32-bit" },
+      { c:2, t:"Rendered 'gateway_focus10' (1800s)" },
+      { c:0, t:"  audio.wav  haptic.wav  photic_events.json" },
     ],
-    "play": [
-      { cls:"o-cmd", text:"$ paplay ~/entrainment_out/audio.wav &" },
-      { cls:"o-ok", text:"▶ Playing gateway_focus10 — 30:00" },
-    ],
-    "stop": [
-      { cls:"o-cmd", text:"$ pkill paplay" },
-      { cls:"o-warn", text:"■ Stopped playback" },
-    ],
-    "uptime": [
-      { cls:"o-cmd", text:"$ uptime -p && uname -r" },
-      { cls:"o-val", text:"up 14 days, 7:23" },
-      { cls:"o-line", text:"6.18.44-fc-v37" },
-    ],
-    "memory": [
-      { cls:"o-cmd", text:"$ free -h | head -2" },
-      { cls:"o-line", text:"              total    used     free     available" },
-      { cls:"o-val", text:"Mem:          16Gi     6.2Gi    4.1Gi    9.2Gi" },
-    ],
-    "disk": [
-      { cls:"o-cmd", text:"$ df -h / /home | tail -2" },
-      { cls:"o-val", text:"/   468G  142G  302G  32%" },
-      { cls:"o-val", text:"/home  931G  89G  798G  10%" },
-    ],
-    "temp": [
-      { cls:"o-cmd", text:"$ sensors | grep 'Core 0'" },
-      { cls:"o-ok", text:"Core 0: +42.0°C  (high +100°C)" },
-    ],
-    "top": [
-      { cls:"o-cmd", text:"$ ps aux --sort=-%mem | head -5" },
-      { cls:"o-warn", text:"htpc  1842  2.1%  8.4%  /usr/bin/kodi" },
-      { cls:"o-line", text:"htpc  2103  0.8%  3.2%  pipewire" },
-      { cls:"o-line", text:"htpc  1201  0.3%  1.8%  Xwayland" },
-      { cls:"o-line", text:"root   412  0.0%  0.4%  systemd" },
-    ],
+    play:   [{ c:1, t:"$ paplay ~/entrainment_out/audio.wav &" }, { c:3, t:"▶ Playing gateway_focus10 — 30:00" }],
+    stop:   [{ c:1, t:"$ pkill paplay" }, { c:4, t:"■ Stopped playback" }],
+    uptime: [{ c:1, t:"$ uptime -p && uname -r" }, { c:2, t:"up 14 days, 7:23" }, { c:0, t:"6.18.44-fc-v37" }],
+    memory: [{ c:1, t:"$ free -h | head -2" }, { c:0, t:"              total    used     free     avail" }, { c:2, t:"Mem:          16Gi     6.2Gi    4.1Gi    9.2Gi" }],
+    disk:   [{ c:1, t:"$ df -h / /home | tail -2" }, { c:2, t:"/   468G  142G  302G  32%" }, { c:2, t:"/home  931G  89G  798G  10%" }],
+    temp:   [{ c:1, t:"$ sensors | grep 'Core 0'" }, { c:3, t:"Core 0: +42.0°C  (high +100°C)" }],
+    top:    [{ c:1, t:"$ ps aux --sort=-%mem | head -4" }, { c:4, t:"htpc 1842 2.1% 8.4% /usr/bin/kodi" }, { c:0, t:"htpc 2103 0.8% 3.2% pipewire" }, { c:0, t:"htpc 1201 0.3% 1.8% Xwayland" }],
   };
+
+  var LINE_COLORS = ["","color:var(--amber)","color:var(--text-bright);font-weight:500","color:var(--teal)","color:var(--warn)"];
+
+  function lineHtml(l) {
+    var s = LINE_COLORS[l.c] || "";
+    return "<div" + (s ? ' style="' + s + '"' : "") + ">" + esc(l.t) + "</div>";
+  }
 
   // ── Render ──
-  const app = document.getElementById("app");
-  const hostBar = document.getElementById("hostBar");
+  var layoutEl = document.getElementById("layout");
+  var hostBarEl = document.getElementById("hostBar");
 
   function render() {
-    const h = hosts[activeHostIdx];
-    const isConn = !!connected[activeHostIdx];
+    var h = hosts[activeIdx];
+    var isConn = !!connectedSet[activeIdx];
 
-    // Connection pill
-    const pill = document.getElementById("connPill");
-    const pillText = document.getElementById("connText");
-    pill.className = "conn-pill " + (isConn ? "on" : "off");
-    pillText.textContent = isConn ? h.host : "offline";
+    document.getElementById("sPill").className = "status-pill " + (isConn ? "on" : "off");
+    document.getElementById("sText").textContent = isConn ? h.host : "offline";
 
-    // Host bar
-    let hb = "";
-    hosts.forEach((host, i) => {
-      const active = i === activeHostIdx ? " active" : "";
-      const conn = connected[i] ? " connected" : "";
-      hb += '<button class="host-tab'+active+conn+'" data-hi="'+i+'">' +
-        '<span class="hdot"></span>' +
-        esc(host.label || host.user+"@"+host.host) +
-        '</button>';
+    renderHostBar();
+    renderLayout(h, isConn);
+    bindEvents(h, isConn);
+  }
+
+  function renderHostBar() {
+    var frag = document.createDocumentFragment();
+    hosts.forEach(function(h, i) {
+      var btn = document.createElement("button");
+      btn.className = "host-tab" + (i === activeIdx ? " active" : "") + (connectedSet[i] ? " connected" : "");
+      btn.textContent = h.label || h.user + "@" + h.host;
+      btn.addEventListener("click", function() { activeIdx = i; render(); });
+      frag.appendChild(btn);
     });
-    hb += '<button class="add-host-tab" id="addHostBtn" title="Add host">+</button>';
-    hostBar.innerHTML = hb;
+    var addEl = document.createElement("button");
+    addEl.className = "add-btn";
+    addEl.textContent = "+";
+    addEl.title = "Add host";
+    addEl.addEventListener("click", openModal);
+    frag.appendChild(addEl);
+    hostBarEl.innerHTML = "";
+    hostBarEl.appendChild(frag);
+  }
 
-    hostBar.querySelectorAll("[data-hi]").forEach(el => {
-      el.addEventListener("click", () => {
-        activeHostIdx = parseInt(el.dataset.hi);
-        render();
-      });
-    });
-    document.getElementById("addHostBtn").addEventListener("click", openModal);
-
-    // App body
-    let html = "";
+  function renderLayout(h, isConn) {
+    var html = "";
 
     if (!isConn) {
-      html += '<div class="section">' +
-        '<div class="controls">' +
-        '<button class="ctrl-btn wide accent" id="connectBtn">' +
-        '<span class="icon">⚡</span>' +
-        '<span class="labels"><span class="label">Connect to ' + esc(h.label || h.host) + '</span>' +
-        '<span class="sub">' + esc(h.user) + '@' + esc(h.host) + '</span></span>' +
-        '</button>' +
-        '</div></div>';
+      html += '<div class="connect-card" id="connCard">' +
+        '<span class="cc-icon">⚡</span>' +
+        '<div><div class="cc-text">Connect to ' + esc(h.label || h.host) + '</div>' +
+        '<div class="cc-sub">' + esc(h.user) + '@' + esc(h.host) + ' — press Enter or tap</div></div></div>';
+      if (!tipOff) {
+        html += '<div class="tip" id="tipEl">' +
+          '<span>💡</span><span><strong>Quick start:</strong> Connect → Detect → Render → Play. ' +
+          'Use number keys <kbd style="display:inline;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:0 3px;font-size:11px;font-family:monospace">1</kbd>-' +
+          '<kbd style="display:inline;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:0 3px;font-size:11px;font-family:monospace">0</kbd> ' +
+          'with a Bluetooth keyboard for hands-free control.</span>' +
+          '<button class="close" id="tipClose">×</button></div>';
+      }
     } else {
-      // Audio section
-      html += '<div class="section"><div class="section-label">Audio</div><div class="controls">';
-      html += btn("detect", "🔍", "Detect", "sink + format");
-      html += btn("volume", "🔊", "Volume", "levels + mute");
-      html += btn("info", "🎵", "Engine Info", "full audio report");
-      html += '</div></div>';
+      html += '<div class="sidebar">';
+      html += buildGroup("Audio", "amber", CMDS.filter(function(c){ return c.group==="audio"; }));
+      html += buildGroup("Entrainment", "teal", CMDS.filter(function(c){ return c.group==="entrainment"; }));
+      html += buildGroup("System", "lavender", CMDS.filter(function(c){ return c.group==="system"; }));
+      html += '<div class="group blue" style="padding:8px 12px;">' +
+        '<button class="cmd-btn" id="disconnBtn" style="width:100%;border-left-color:var(--red)">' +
+        '<span class="key" style="color:var(--red);border-color:rgba(204,85,85,0.3)">Esc</span>' +
+        '<span class="lbl"><span class="name">Disconnect</span><span class="desc">close session</span></span></button></div>';
+      html += '</div>';
 
-      // Entrainment section
-      html += '<div class="section"><div class="section-label">Entrainment</div><div class="controls">';
-      html += btn("render", "🎯", "Render", "focus10 @ native", "accent");
-      html += btn("play", "▶️", "Play", "start session", "success-tint");
-      html += btn("stop", "⏹️", "Stop", "kill playback");
-      html += '</div></div>';
-
-      // System section
-      html += '<div class="section"><div class="section-label">System</div><div class="controls">';
-      html += btn("uptime", "⏱️", "Uptime", "kernel + uptime");
-      html += btn("memory", "📊", "Memory", "RAM usage");
-      html += btn("disk", "💾", "Disk", "storage free");
-      html += btn("temp", "🌡️", "Temp", "CPU core");
-      html += btn("top", "📶", "Top", "by memory");
-      html += btnDisconn();
-      html += '</div></div>';
-
-      // Output
-      html += '<div class="section"><div class="output-card">' +
-        '<div class="output-header"><span>Output</span>' +
-        '<button class="output-clear" id="clearOutput">Clear</button></div>' +
-        '<div class="output-body" id="outputBody">' +
-        renderOutput(activeHostIdx) +
-        '</div></div></div>';
+      html += '<div class="main">';
+      html += '<div class="output-panel"><div class="output-head"><span>Output</span>' +
+        '<button id="clearBtn">Clear</button></div>' +
+        '<div class="out-body" id="outBody">' + renderLog(activeIdx) + '</div></div>';
+      html += '<div class="kb-help" style="margin-top:8px;">' +
+        '<strong style="color:var(--lavender)">Keyboard</strong> &mdash; ' +
+        'Numbers <kbd>1</kbd>-<kbd>0</kbd> run commands, ' +
+        '<kbd>T</kbd> top, ' +
+        '<kbd>Esc</kbd> disconnect, ' +
+        '<kbd>Space</kbd> play/pause, ' +
+        '<kbd>?</kbd> this help</div>';
+      html += '</div>';
     }
 
-    // Tip
-    if (!tipDismissed) {
-      const tip = TIPS[currentTip];
-      html += '<div class="tip-banner" id="tipBanner">' +
-        '<span class="tip-icon">' + tip.icon + '</span>' +
-        '<span class="tip-text">' + tip.html + '</span>' +
-        '<button class="dismiss" id="dismissTip" title="Dismiss">×</button>' +
-        '</div>';
-    }
+    html += '<div class="spacer"></div>';
+    layoutEl.innerHTML = html;
+  }
 
-    html += '<div class="footer-space"></div>';
-    app.innerHTML = html;
+  function buildGroup(title, color, cmds) {
+    var h = '<div class="group ' + color + '">';
+    h += '<div class="group-head">' + esc(title) + '</div>';
+    h += '<div class="cmd-grid">';
+    cmds.forEach(function(c) {
+      h += '<button class="cmd-btn' + (c.accent ? ' ' + c.accent : '') + '" data-cmd="' + c.id + '">' +
+        '<span class="key">' + esc(c.key) + '</span>' +
+        '<span class="lbl"><span class="name">' + esc(c.name) + '</span>' +
+        '<span class="desc">' + esc(c.desc) + '</span></span></button>';
+    });
+    h += '</div></div>';
+    return h;
+  }
 
-    // Bind events
-    const connectBtnEl = document.getElementById("connectBtn");
-    if (connectBtnEl) {
-      connectBtnEl.addEventListener("click", () => {
-        connected[activeHostIdx] = true;
-        render();
-      });
-    }
+  function renderLog(idx) {
+    var lines = outputLog[idx];
+    if (!lines || !lines.length) return "";
+    return lines.map(lineHtml).join("");
+  }
 
-    app.querySelectorAll("[data-cmd]").forEach(el => {
-      el.addEventListener("click", () => runCmd(el.dataset.cmd));
+  function bindEvents(h, isConn) {
+    var cc = document.getElementById("connCard");
+    if (cc) cc.addEventListener("click", function() { connectedSet[activeIdx] = true; render(); });
+
+    var tc = document.getElementById("tipClose");
+    if (tc) tc.addEventListener("click", function() { tipOff = true; saveStore("pc_tip_off", true); var el = document.getElementById("tipEl"); if (el) el.hidden = true; });
+
+    layoutEl.querySelectorAll("[data-cmd]").forEach(function(el) {
+      el.addEventListener("click", function() { runCmd(el.dataset.cmd); });
     });
 
-    const disconnEl = document.getElementById("disconnBtn");
-    if (disconnEl) {
-      disconnEl.addEventListener("click", () => {
-        delete connected[activeHostIdx];
-        delete outputs[activeHostIdx];
-        render();
-      });
-    }
+    var db = document.getElementById("disconnBtn");
+    if (db) db.addEventListener("click", function() { delete connectedSet[activeIdx]; delete outputLog[activeIdx]; render(); });
 
-    const clearEl = document.getElementById("clearOutput");
-    if (clearEl) {
-      clearEl.addEventListener("click", () => {
-        outputs[activeHostIdx] = [];
-        const ob = document.getElementById("outputBody");
-        if (ob) ob.innerHTML = "";
-      });
-    }
-
-    const dismissEl = document.getElementById("dismissTip");
-    if (dismissEl) {
-      dismissEl.addEventListener("click", () => {
-        tipDismissed = true;
-        try { localStorage.setItem("pc_tip_dismissed", "1"); } catch(e) {}
-        const banner = document.getElementById("tipBanner");
-        if (banner) banner.hidden = true;
-      });
-    }
+    var cb = document.getElementById("clearBtn");
+    if (cb) cb.addEventListener("click", function() { outputLog[activeIdx] = []; var ob = document.getElementById("outBody"); if (ob) ob.textContent = ""; });
   }
 
-  function btn(cmd, icon, label, sub, extra) {
-    return '<button class="ctrl-btn'+(extra ? ' '+extra : '')+'" data-cmd="'+cmd+'">' +
-      '<span class="icon">'+icon+'</span>' +
-      '<span class="label">'+esc(label)+'</span>' +
-      '<span class="sub">'+esc(sub)+'</span></button>';
-  }
-
-  function btnDisconn() {
-    return '<button class="ctrl-btn" id="disconnBtn">' +
-      '<span class="icon" style="color:var(--error)">⏻</span>' +
-      '<span class="label">Disconnect</span>' +
-      '<span class="sub">close session</span></button>';
-  }
-
-  const LINE_STYLES = {
-    "o-cmd": "color:var(--prompt);font-weight:500;margin-top:8px",
-    "o-ok": "color:var(--success)",
-    "o-warn": "color:var(--warn)",
-    "o-val": "color:var(--text-bright);font-weight:500",
-  };
-
-  function lineToHtml(l) {
-    const s = LINE_STYLES[l.cls] || "";
-    return '<div'+(s ? ' style="'+s+'"' : '')+'>'+esc(l.text)+'</div>';
-  }
-
-  function runCmd(cmd) {
-    const sim = SIMS[cmd];
+  function runCmd(id) {
+    var sim = SIMS[id];
     if (!sim) return;
-    if (!outputs[activeHostIdx]) outputs[activeHostIdx] = [];
-    outputs[activeHostIdx].push(...sim);
-    const ob = document.getElementById("outputBody");
+    if (!outputLog[activeIdx]) outputLog[activeIdx] = [];
+    outputLog[activeIdx] = outputLog[activeIdx].concat(sim);
+    var ob = document.getElementById("outBody");
     if (ob) {
-      ob.insertAdjacentHTML("beforeend", sim.map(lineToHtml).join(""));
+      ob.insertAdjacentHTML("beforeend", sim.map(lineHtml).join(""));
       ob.scrollTop = ob.scrollHeight;
     }
-    const btnEl = app.querySelector('[data-cmd="'+cmd+'"]');
-    if (btnEl) {
-      btnEl.style.background = "var(--surface-bright)";
-      setTimeout(function() { btnEl.style.background = ""; }, 200);
-    }
+    var btn = layoutEl.querySelector('[data-cmd="' + id + '"]');
+    if (btn) { btn.style.background = "var(--border)"; setTimeout(function() { btn.style.background = ""; }, 150); }
   }
 
-  function renderOutput(idx) {
-    var lines = outputs[idx];
-    if (!lines || lines.length === 0) return "";
-    return lines.map(lineToHtml).join("");
-  }
+  // ── Keyboard shortcuts (works with BT keyboards) ──
+  var KEY_MAP = { "1":"detect", "2":"volume", "3":"info", "4":"render", "5":"play", "6":"stop", "7":"uptime", "8":"memory", "9":"disk", "0":"temp" };
+
+  document.addEventListener("keydown", function(e) {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+    if (document.getElementById("modal").hidden === false) {
+      if (e.key === "Escape") { document.getElementById("modal").hidden = true; e.preventDefault(); }
+      return;
+    }
+    var isConn = !!connectedSet[activeIdx];
+    if (e.key === "Enter" && !isConn) { connectedSet[activeIdx] = true; render(); e.preventDefault(); return; }
+    if (e.key === "Escape" && isConn) { delete connectedSet[activeIdx]; delete outputLog[activeIdx]; render(); e.preventDefault(); return; }
+    if (!isConn) return;
+    if (KEY_MAP[e.key]) { runCmd(KEY_MAP[e.key]); e.preventDefault(); return; }
+    if (e.key === "t" || e.key === "T") { runCmd("top"); e.preventDefault(); return; }
+    if (e.key === " ") {
+      var playing = (outputLog[activeIdx] || []).some(function(l) { return l.t.indexOf("▶") >= 0; });
+      runCmd(playing ? "stop" : "play");
+      e.preventDefault();
+    }
+  });
 
   // ── Modal ──
-  const modal = document.getElementById("addModal");
+  var modal = document.getElementById("modal");
   function openModal() {
-    document.getElementById("modalUser").value = "";
-    document.getElementById("modalHost").value = "";
-    document.getElementById("modalLabel").value = "";
+    document.getElementById("mUser").value = "";
+    document.getElementById("mHost").value = "";
+    document.getElementById("mLabel").value = "";
     modal.hidden = false;
-    setTimeout(() => document.getElementById("modalUser").focus(), 100);
+    setTimeout(function() { document.getElementById("mUser").focus(); }, 100);
   }
-  document.getElementById("modalCancel").addEventListener("click", () => { modal.hidden = true; });
-  document.getElementById("modalConnect").addEventListener("click", () => {
-    const user = document.getElementById("modalUser").value.trim() || "user";
-    const host = document.getElementById("modalHost").value.trim();
-    const label = document.getElementById("modalLabel").value.trim();
+  document.getElementById("mCancel").addEventListener("click", function() { modal.hidden = true; });
+  document.getElementById("mOk").addEventListener("click", addHost);
+  modal.addEventListener("click", function(e) { if (e.target === modal) modal.hidden = true; });
+
+  function addHost() {
+    var user = document.getElementById("mUser").value.trim() || "user";
+    var host = document.getElementById("mHost").value.trim();
+    var label = document.getElementById("mLabel").value.trim();
     if (!host) return;
-    hosts.push({ user, host, label: label || host });
-    saveHosts();
-    activeHostIdx = hosts.length - 1;
+    hosts.push({ user: user, host: host, label: label || host });
+    saveStore("pc_hosts", hosts);
+    activeIdx = hosts.length - 1;
     modal.hidden = true;
     render();
-  });
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) modal.hidden = true;
-  });
+  }
 
   // ── Clock ──
   function tick() {
-    document.getElementById("clock").textContent =
-      new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
+    var el = document.getElementById("clock");
+    if (el) el.textContent = new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
   }
   tick(); setInterval(tick, 30000);
 
-  // ── Init ──
+  // ── Boot ──
+  init();
   render();
 })();
 </script>
