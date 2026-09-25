@@ -244,5 +244,203 @@ class SessionTests(unittest.TestCase):
                 _output_path(d, "../escaped.wav")
 
 
+class AudioOutputTests(unittest.TestCase):
+    def test_parse_sink_name(self):
+        from vibroacoustic_entrainment.audio_output import _parse_sink_name
+
+        text = "Server Name: PipeWire\nDefault Sink: alsa_output.pci-0000_00_1f.3.hdmi-stereo\n"
+        self.assertEqual(_parse_sink_name(text), "alsa_output.pci-0000_00_1f.3.hdmi-stereo")
+
+    def test_parse_sink_name_missing(self):
+        from vibroacoustic_entrainment.audio_output import _parse_sink_name
+
+        self.assertIsNone(_parse_sink_name(None))
+        self.assertIsNone(_parse_sink_name("no match here"))
+
+    def test_parse_sinks_short(self):
+        from vibroacoustic_entrainment.audio_output import _parse_sinks_short
+
+        text = "60\talsa_output.pci-0000_00_1f.3.hdmi-stereo\tPipeWire\ts32le 2ch 48000Hz\tRUNNING\n"
+        result = _parse_sinks_short(text, "alsa_output.pci-0000_00_1f.3.hdmi-stereo")
+        self.assertEqual(result["sample_rate"], 48000)
+        self.assertEqual(result["channels"], 2)
+        self.assertEqual(result["sample_format"], "s32le")
+        self.assertEqual(result["bit_depth"], 32)
+
+    def test_parse_sinks_short_no_match(self):
+        from vibroacoustic_entrainment.audio_output import _parse_sinks_short
+
+        text = "60\tother_sink\tPipeWire\ts16le 2ch 44100Hz\tRUNNING\n"
+        self.assertEqual(_parse_sinks_short(text, "nonexistent_sink"), {})
+
+    def test_parse_volume(self):
+        from vibroacoustic_entrainment.audio_output import _parse_volume
+
+        text = "Volume: front-left: 26214 /  40% / -23.88 dB,   front-right: 26214 /  40% / -23.88 dB\n"
+        self.assertEqual(_parse_volume(text), 40)
+
+    def test_parse_mute(self):
+        from vibroacoustic_entrainment.audio_output import _parse_mute
+
+        self.assertFalse(_parse_mute("Mute: no"))
+        self.assertTrue(_parse_mute("Mute: yes"))
+        self.assertIsNone(_parse_mute(None))
+
+    def test_parse_server(self):
+        from vibroacoustic_entrainment.audio_output import _parse_server
+
+        text = "Server Name: PipeWire (version 1.0)\nDefault Sink: foo\n"
+        self.assertEqual(_parse_server(text), "PipeWire (version 1.0)")
+
+    def test_audio_output_info_matched_bit_depth(self):
+        from vibroacoustic_entrainment.audio_output import AudioOutputInfo
+
+        self.assertEqual(AudioOutputInfo(bit_depth=32).matched_bit_depth, 32)
+        self.assertEqual(AudioOutputInfo(bit_depth=16).matched_bit_depth, 16)
+        self.assertEqual(AudioOutputInfo(bit_depth=24).matched_bit_depth, 32)
+        self.assertEqual(AudioOutputInfo(bit_depth=None).matched_bit_depth, 16)
+
+    def test_pactl_format_bits_coverage(self):
+        from vibroacoustic_entrainment.audio_output import PACTL_FORMAT_BITS
+
+        self.assertEqual(PACTL_FORMAT_BITS["s32le"], 32)
+        self.assertEqual(PACTL_FORMAT_BITS["s16le"], 16)
+        self.assertEqual(PACTL_FORMAT_BITS["s24le"], 24)
+        self.assertEqual(PACTL_FORMAT_BITS["float32le"], 32)
+
+
+class BitDepth32Tests(unittest.TestCase):
+    def _short_protocol(self):
+        return Protocol(
+            name="short",
+            stages=(Stage("a", 0.5, 10.0, 10.0),),
+            carrier_hz=200.0,
+        )
+
+    def test_pcm32_conversion(self):
+        samples = [0.0, 0.5, -0.5, 1.0, -1.0]
+        result = oscillators._to_pcm32(samples)
+        self.assertIsInstance(result, bytes)
+        self.assertEqual(len(result), 5 * 4)
+        import struct
+        vals = [struct.unpack("<i", result[i*4:(i+1)*4])[0] for i in range(5)]
+        self.assertEqual(vals[0], 0)
+        self.assertGreater(vals[1], 0)
+        self.assertLess(vals[2], 0)
+
+    def test_render_binaural_32bit(self):
+        p = self._short_protocol()
+        left, right = oscillators.render_binaural(p, sample_rate=8000, bit_depth=32)
+        self.assertIsInstance(left, bytes)
+        self.assertIsInstance(right, bytes)
+        self.assertEqual(len(left), len(right))
+        n = oscillators._n_samples(0.5, 8000)
+        self.assertEqual(len(left), n * 4)
+
+    def test_render_monaural_32bit(self):
+        p = self._short_protocol()
+        mono = oscillators.render_monaural(p, sample_rate=8000, bit_depth=32)
+        self.assertIsInstance(mono, bytes)
+        n = oscillators._n_samples(0.5, 8000)
+        self.assertEqual(len(mono), n * 4)
+
+    def test_render_isochronic_32bit(self):
+        p = self._short_protocol()
+        mono = oscillators.render_isochronic(p, sample_rate=8000, bit_depth=32)
+        self.assertIsInstance(mono, bytes)
+
+    def test_write_wav_mono_32bit(self):
+        p = self._short_protocol()
+        mono = oscillators.render_monaural(p, sample_rate=8000, bit_depth=32)
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+            path = f.name
+        try:
+            oscillators.write_wav_mono(path, mono, 8000, sample_width=4)
+            with wave.open(path, "rb") as wf:
+                self.assertEqual(wf.getnchannels(), 1)
+                self.assertEqual(wf.getsampwidth(), 4)
+                self.assertEqual(wf.getframerate(), 8000)
+        finally:
+            os.unlink(path)
+
+    def test_write_wav_stereo_32bit(self):
+        p = self._short_protocol()
+        left, right = oscillators.render_binaural(p, sample_rate=8000, bit_depth=32)
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+            path = f.name
+        try:
+            oscillators.write_wav_stereo(path, left, right, 8000, sample_width=4)
+            with wave.open(path, "rb") as wf:
+                self.assertEqual(wf.getnchannels(), 2)
+                self.assertEqual(wf.getsampwidth(), 4)
+                self.assertEqual(wf.getframerate(), 8000)
+        finally:
+            os.unlink(path)
+
+    def test_session_config_rejects_bad_bit_depth(self):
+        with self.assertRaises(ValueError):
+            SessionConfig(bit_depth=24)
+
+    def test_render_session_32bit(self):
+        protocol = gateway_focus10(duration_s=0.5)
+        config = SessionConfig(
+            sample_rate=8000, bit_depth=32,
+            haptic_mode=None, photic_enabled=False,
+        )
+        with tempfile.TemporaryDirectory() as d:
+            manifest = render_session(protocol, config, d)
+            audio_path = os.path.join(d, "audio.wav")
+            with wave.open(audio_path, "rb") as wf:
+                self.assertEqual(wf.getsampwidth(), 4)
+                self.assertEqual(wf.getframerate(), 8000)
+                self.assertEqual(wf.getnchannels(), 2)
+
+    def test_render_session_32bit_monaural(self):
+        protocol = gateway_focus10(duration_s=0.5)
+        config = SessionConfig(
+            audio_mode="monaural", sample_rate=8000, bit_depth=32,
+            haptic_mode=None, photic_enabled=False,
+        )
+        with tempfile.TemporaryDirectory() as d:
+            manifest = render_session(protocol, config, d)
+            audio_path = os.path.join(d, "audio.wav")
+            with wave.open(audio_path, "rb") as wf:
+                self.assertEqual(wf.getsampwidth(), 4)
+                self.assertEqual(wf.getnchannels(), 1)
+
+    def test_render_session_32bit_isochronic(self):
+        protocol = gateway_focus10(duration_s=0.5)
+        config = SessionConfig(
+            audio_mode="isochronic", sample_rate=8000, bit_depth=32,
+            haptic_mode=None, photic_enabled=False,
+        )
+        with tempfile.TemporaryDirectory() as d:
+            manifest = render_session(protocol, config, d)
+            audio_path = os.path.join(d, "audio.wav")
+            with wave.open(audio_path, "rb") as wf:
+                self.assertEqual(wf.getsampwidth(), 4)
+                self.assertEqual(wf.getnchannels(), 1)
+
+
+class CLITests(unittest.TestCase):
+    def test_cli_bit_depth_flag(self):
+        from vibroacoustic_entrainment.cli import build_parser
+
+        args = build_parser().parse_args(["--bit-depth", "32"])
+        self.assertEqual(args.bit_depth, 32)
+
+    def test_cli_match_system_flag(self):
+        from vibroacoustic_entrainment.cli import build_parser
+
+        args = build_parser().parse_args(["--match-system"])
+        self.assertTrue(args.match_system)
+
+    def test_cli_show_audio_info_flag(self):
+        from vibroacoustic_entrainment.cli import build_parser
+
+        args = build_parser().parse_args(["--show-audio-info"])
+        self.assertTrue(args.show_audio_info)
+
+
 if __name__ == "__main__":
     unittest.main()

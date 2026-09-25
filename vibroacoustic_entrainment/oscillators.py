@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import array
 import math
+import struct
 import wave
 
 from .protocol import Protocol
@@ -45,12 +46,27 @@ def _to_pcm16(samples: list[float]) -> "array.array[int]":
     return out
 
 
+def _to_pcm32(samples: list[float]) -> bytes:
+    parts = []
+    for x in samples:
+        x = clamp_amplitude(x)
+        parts.append(struct.pack("<i", int(x * 2147483647)))
+    return b"".join(parts)
+
+
+def _convert(samples: list[float], bit_depth: int) -> "array.array[int] | bytes":
+    if bit_depth == 32:
+        return _to_pcm32(samples)
+    return _to_pcm16(samples)
+
+
 def render_binaural(
     protocol: Protocol,
     sample_rate: int = DEFAULT_SAMPLE_RATE,
     amplitude: float = 0.5,
-) -> tuple["array.array[int]", "array.array[int]"]:
-    """Render a stereo binaural-beat track. Returns (left, right) PCM16 sample arrays."""
+    bit_depth: int = 16,
+) -> tuple["array.array[int] | bytes", "array.array[int] | bytes"]:
+    """Render a stereo binaural-beat track. Returns (left, right) PCM sample data."""
     n = _n_samples(protocol.total_duration, sample_rate)
     left = [0.0] * n
     right = [0.0] * n
@@ -61,14 +77,15 @@ def render_binaural(
         half_beat_phase = 0.5 * protocol.phase_at(t)
         left[i] = amplitude * math.sin(carrier_phase - half_beat_phase)
         right[i] = amplitude * math.sin(carrier_phase + half_beat_phase)
-    return _to_pcm16(left), _to_pcm16(right)
+    return _convert(left, bit_depth), _convert(right, bit_depth)
 
 
 def render_monaural(
     protocol: Protocol,
     sample_rate: int = DEFAULT_SAMPLE_RATE,
     amplitude: float = 0.5,
-) -> "array.array[int]":
+    bit_depth: int = 16,
+) -> "array.array[int] | bytes":
     """Render a mono monaural-beat track (physically beating waveform, speaker-safe)."""
     n = _n_samples(protocol.total_duration, sample_rate)
     samples = [0.0] * n
@@ -80,7 +97,7 @@ def render_monaural(
         tone_a = math.sin(carrier_phase - half_beat_phase)
         tone_b = math.sin(carrier_phase + half_beat_phase)
         samples[i] = amplitude * 0.5 * (tone_a + tone_b)
-    return _to_pcm16(samples)
+    return _convert(samples, bit_depth)
 
 
 def _smoothed_gate(cycle_frac: float, duty_cycle: float, edge_frac: float) -> float:
@@ -102,7 +119,8 @@ def render_isochronic(
     amplitude: float = 0.5,
     duty_cycle: float = 0.5,
     edge_ms: float = 6.0,
-) -> "array.array[int]":
+    bit_depth: int = 16,
+) -> "array.array[int] | bytes":
     """Render a mono isochronic-tone track: carrier gated on/off at the beat frequency."""
     n = _n_samples(protocol.total_duration, sample_rate)
     samples = [0.0] * n
@@ -116,29 +134,45 @@ def render_isochronic(
         edge_frac = min(0.49, (edge_ms / 1000.0) * freq_now)
         gate = _smoothed_gate(cycle_frac, duty_cycle, edge_frac)
         samples[i] = amplitude * carrier * gate
-    return _to_pcm16(samples)
+    return _convert(samples, bit_depth)
 
 
-def write_wav_mono(path: str, samples: "array.array[int]", sample_rate: int = DEFAULT_SAMPLE_RATE) -> None:
+def write_wav_mono(
+    path: str,
+    samples: "array.array[int] | bytes",
+    sample_rate: int = DEFAULT_SAMPLE_RATE,
+    sample_width: int = 2,
+) -> None:
+    data = samples.tobytes() if hasattr(samples, "tobytes") else samples
     with wave.open(path, "wb") as wf:
         wf.setnchannels(1)
-        wf.setsampwidth(2)
+        wf.setsampwidth(sample_width)
         wf.setframerate(sample_rate)
-        wf.writeframes(samples.tobytes())
+        wf.writeframes(data)
 
 
 def write_wav_stereo(
     path: str,
-    left: "array.array[int]",
-    right: "array.array[int]",
+    left: "array.array[int] | bytes",
+    right: "array.array[int] | bytes",
     sample_rate: int = DEFAULT_SAMPLE_RATE,
+    sample_width: int = 2,
 ) -> None:
-    interleaved = array.array("h")
-    interleaved.extend([0] * (2 * len(left)))
-    interleaved[0::2] = left
-    interleaved[1::2] = right
+    if sample_width == 4:
+        n = len(left) // 4
+        interleaved = bytearray(8 * n)
+        for i in range(n):
+            interleaved[8*i:8*i+4] = left[4*i:4*i+4]
+            interleaved[8*i+4:8*i+8] = right[4*i:4*i+4]
+        data = bytes(interleaved)
+    else:
+        interleaved = array.array("h")
+        interleaved.extend([0] * (2 * len(left)))
+        interleaved[0::2] = left
+        interleaved[1::2] = right
+        data = interleaved.tobytes()
     with wave.open(path, "wb") as wf:
         wf.setnchannels(2)
-        wf.setsampwidth(2)
+        wf.setsampwidth(sample_width)
         wf.setframerate(sample_rate)
-        wf.writeframes(interleaved.tobytes())
+        wf.writeframes(data)

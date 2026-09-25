@@ -11,9 +11,21 @@ from __future__ import annotations
 import argparse
 import sys
 
+from .audio_output import AudioOutputInfo, detect_audio_output
 from .protocol import PROTOCOLS
 from .safety import EntrainmentSafetyError
 from .session import SessionConfig, render_session
+
+
+def _print_audio_info(info: AudioOutputInfo) -> None:
+    print("System audio output:")
+    print(f"  Sink:        {info.sink_name or '(unknown)'}")
+    print(f"  Server:      {info.server or '(unknown)'}")
+    print(f"  Sample rate: {info.sample_rate or '(unknown)'} Hz")
+    print(f"  Format:      {info.sample_format or '(unknown)'} ({info.bit_depth or '?'}-bit)")
+    print(f"  Channels:    {info.channels or '(unknown)'}")
+    print(f"  Volume:      {info.volume_pct or '?'}%")
+    print(f"  Muted:       {info.muted if info.muted is not None else '(unknown)'}")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -25,6 +37,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--audio-mode", choices=("binaural", "monaural", "isochronic"), default="binaural")
     p.add_argument("--audio-amplitude", type=float, default=0.5)
     p.add_argument("--sample-rate", type=int, default=44100)
+    p.add_argument("--bit-depth", type=int, choices=(16, 32), default=16,
+                   help="WAV bit depth — 16 (default) or 32. Use 32 for systems running S32LE.")
+
+    p.add_argument("--match-system", action="store_true",
+                   help="Auto-detect PulseAudio/PipeWire default sink and match sample rate + bit depth.")
+    p.add_argument("--show-audio-info", action="store_true",
+                   help="Print detected system audio configuration and exit.")
 
     p.add_argument("--haptic-mode", choices=("none", "constant_carrier", "entrainment_locked"), default="entrainment_locked")
     p.add_argument("--haptic-carrier-hz", type=float, default=40.0)
@@ -44,10 +63,28 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
 
+    if args.show_audio_info:
+        info = detect_audio_output()
+        _print_audio_info(info)
+        return 0
+
+    sample_rate = args.sample_rate
+    bit_depth = args.bit_depth
+
+    if args.match_system:
+        info = detect_audio_output()
+        if info.sample_rate:
+            sample_rate = info.sample_rate
+        if info.matched_bit_depth:
+            bit_depth = info.matched_bit_depth
+        _print_audio_info(info)
+        print(f"  -> Using: {sample_rate} Hz, {bit_depth}-bit")
+
     protocol = PROTOCOLS[args.protocol](carrier_hz=args.carrier_hz)
     config = SessionConfig(
         audio_mode=args.audio_mode,
-        sample_rate=args.sample_rate,
+        sample_rate=sample_rate,
+        bit_depth=bit_depth,
         audio_amplitude=args.audio_amplitude,
         haptic_mode=None if args.haptic_mode == "none" else args.haptic_mode,
         haptic_carrier_hz=args.haptic_carrier_hz,

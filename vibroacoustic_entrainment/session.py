@@ -34,10 +34,14 @@ AUDIO_MODES = ("binaural", "monaural", "isochronic")
 HAPTIC_MODES = ("constant_carrier", "entrainment_locked")
 
 
+BIT_DEPTHS = (16, 32)
+
+
 @dataclass
 class SessionConfig:
     audio_mode: str = "binaural"
     sample_rate: int = DEFAULT_SAMPLE_RATE
+    bit_depth: int = 16
     audio_amplitude: float = 0.5
 
     haptic_mode: str | None = "entrainment_locked"
@@ -56,6 +60,8 @@ class SessionConfig:
             raise ValueError(f"audio_mode must be one of {AUDIO_MODES}")
         if self.haptic_mode is not None and self.haptic_mode not in HAPTIC_MODES:
             raise ValueError(f"haptic_mode must be one of {HAPTIC_MODES} or None")
+        if self.bit_depth not in BIT_DEPTHS:
+            raise ValueError(f"bit_depth must be one of {BIT_DEPTHS}")
 
 
 def collect_safety_warnings(protocol: Protocol, config: SessionConfig) -> list[str]:
@@ -122,15 +128,19 @@ def render_session(protocol: Protocol, config: SessionConfig, output_dir: str) -
         "files": {},
     }
 
+    sample_width = config.bit_depth // 8
+
     if config.audio_mode == "binaural":
-        left, right = oscillators.render_binaural(protocol, config.sample_rate, config.audio_amplitude)
+        left, right = oscillators.render_binaural(
+            protocol, config.sample_rate, config.audio_amplitude, bit_depth=config.bit_depth,
+        )
         audio_path = _output_path(output_dir, "audio.wav")
-        oscillators.write_wav_stereo(audio_path, left, right, config.sample_rate)
+        oscillators.write_wav_stereo(audio_path, left, right, config.sample_rate, sample_width)
     else:
         renderer = oscillators.render_monaural if config.audio_mode == "monaural" else oscillators.render_isochronic
-        mono = renderer(protocol, config.sample_rate, config.audio_amplitude)
+        mono = renderer(protocol, config.sample_rate, config.audio_amplitude, bit_depth=config.bit_depth)
         audio_path = _output_path(output_dir, "audio.wav")
-        oscillators.write_wav_mono(audio_path, mono, config.sample_rate)
+        oscillators.write_wav_mono(audio_path, mono, config.sample_rate, sample_width)
     manifest["files"]["audio"] = os.path.basename(audio_path)
 
     if config.haptic_mode is not None:
