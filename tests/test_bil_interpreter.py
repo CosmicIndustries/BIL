@@ -58,11 +58,14 @@ class DictionaryConsistencyTests(unittest.TestCase):
 class EncodeDecodeCollisionTests(unittest.TestCase):
     @unittest.expectedFailure
     def test_c1_collision_corrupts_slot_boundaries(self):
-        """Reproduces the delimiter-collision bug documented in CLAUDE.md.
+        """Pins the delimiter collision documented in CLAUDE.md.
 
-        speech.act.say encodes to "W1 C1 R1" -- its own C1 collides with the
-        slot separator encode_bil_ir uses, so splitting the encoded stream on
-        " C1 " does not recover the original two tokens.
+        Note: the token stream is currently write-only (no decoder exists in
+        the module), so this collision breaks nothing *today*. It demonstrates
+        that the stream is non-decodable by construction, which blocks any
+        future decoder: speech.act.say encodes to "W1 C1 R1" -- its own C1
+        collides with the slot separator encode_bil_ir uses, so splitting the
+        encoded stream on " C1 " does not recover the original two tokens.
         """
         bil_ir = {
             "speech_act": "speech.act.say",

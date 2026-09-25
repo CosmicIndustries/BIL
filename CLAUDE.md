@@ -41,10 +41,12 @@ Everything is driven by four dicts in this one file, kept in sync **by hand** �
 
 `TOKEN_REGISTRY` is supposed to hold three invariants (this is also documented in the `bil-interpreter` skill): **injective** (each token maps back to exactly one concept), **delimiter-free** (no token may contain the `C1`/`C2` symbols used as the encoder's slot-separator/terminator), and **total** (every concept `SUES_MAP` can produce has a token).
 
-**As of the last audit, none of the three hold**, and there's no test catching it:
-- **Not delimiter-free (breaks round-trips today):** 14 of 111 tokens contain `C1` or `C2` as one of their own space-separated symbols (e.g. `speech.act.say → "W1 C1 R1"`, `object.symbol.token → "R1 C2 W1"`). `encode_bil_ir` joins slot tokens with `" C1 "` and appends `" C2"`, so any of these 14 concepts corrupts the slot boundaries on decode. Reproduce: encode `speech.act.say` + `entity.person.speaker` → `"W1 C1 R1 C1 R1 W1 C2"`; splitting on the intended delimiter yields garbage, not the original 2 tokens.
+**First, the load-bearing fact:** the BIL token stream is currently **write-only**. `encode_bil_ir` produces it, `n8n_handle` stores and prints it, and nothing ever parses it back — there is no decoder in this file (grep for `decode`: the only hit is a concept-path *string*, not a function). The round-trip that exists, English → BIL-IR → English, runs entirely through the IR JSON; `generate_english()` reads the IR dict, never the tokens. So the three invariants below do **not** break anything today — they make the token stream **non-decodable by construction**, which is what blocks the README roadmap's v0.9 decoder and v1.0 round-trip benchmark, and undercuts the premise that "BIL tokens" are a payload an LLM could recover meaning from. Right now the tokens are a lossy sidecar next to the real payload (the IR).
+
+**None of the three invariants hold** (`tests/test_bil_interpreter.py` pins each as an `@unittest.expectedFailure`):
+- **Not delimiter-free:** 14 of 111 tokens contain `C1` or `C2` as one of their own space-separated symbols (e.g. `speech.act.say → "W1 C1 R1"`, `object.symbol.token → "R1 C2 W1"`). `encode_bil_ir` joins slot tokens with `" C1 "` and appends `" C2"`, so a future decoder splitting on the delimiter can't recover the original tokens: encode `speech.act.say` + `entity.person.speaker` → `"W1 C1 R1 C1 R1 W1 C2"`, which no longer splits back into the two source tokens.
 - **Not total:** 74 of 183 `SUES_MAP` concepts (~40%) have no `TOKEN_REGISTRY` entry — encoding falls back silently to `UNK_TOKEN[{concept}]`.
-- **Not injective:** several token strings are reused across unrelated concepts, so decode is ambiguous for those independent of the delimiter issue above.
+- **Not injective:** several token strings are reused across unrelated concepts, so a decoder could not tell them apart, independent of the delimiter issue above.
 - `_ENGLISH_LABELS` covers only 35 of 183 concepts (~19%) — `generate_english()` echoes the raw dotted concept path for the rest instead of natural English.
 - `ENGLISH_TO_SUES` has ~10 entries pointing at SUES terms that don't exist in `SUES_MAP` (e.g. `tell`, `keepgo`, `@answer`), which `map_sues_term()` silently passes through unresolved.
 
@@ -52,7 +54,7 @@ The README's own roadmap (`v0.8 — ... token collision checker`) already flags 
 
 ### Status (from README, may drift — verify before relying on it)
 
-SUES parser and BIL-IR schema: stable. Token encoder: stable *modulo the collision bug above*. English generator: basic. English parser: lexicon-based, no POS tagging. Round-trip fidelity: partial.
+SUES parser and BIL-IR schema: stable. Token encoder: runs, but emits a non-decodable stream (see the write-only note above) — treat it as a display artifact, not a recoverable encoding, until a decoder and the three invariants exist. English generator: basic. English parser: lexicon-based, no POS tagging. Round-trip fidelity: English↔IR only; the token layer does not round-trip.
 
 ## Vibroacoustic entrainment package
 
