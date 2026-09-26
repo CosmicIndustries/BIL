@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Cosmic OTF YouTube
 // @namespace    CosmicIndustries
-// @version      0.5.0
-// @description  Real-time GPU video reconstruction and AudioWorklet DSP for YouTube.
+// @version      0.6.0
+// @description  Real-time GPU video reconstruction, KEMAR surround virtualization, and AudioWorklet DSP for YouTube.
 // @author       CosmicIndustries
 // @license      MIT
 // @match        https://*.youtube.*/*
@@ -44,6 +44,7 @@
      *       ├── air
      *       ├── clarity
      *       ├── stereo width
+     *       ├── KEMAR surround (crossfeed + room)
      *       ├── compression
      *       └── true-peak-style limiter
      *       ↓
@@ -84,7 +85,7 @@
      * ==========================================================
      */
 
-    const VERSION = '0.5.0';
+    const VERSION = '0.6.0';
 
     // Bump this if the shape of CFG ever changes incompatibly.
     const STORAGE_KEY =
@@ -131,7 +132,13 @@
 
             limiter: -1,
 
-            stereo: 0
+            stereo: 0,
+
+            surround: {
+                enabled: false,
+                crossfeed: 0.3,
+                roomSize: 0.2
+            }
         },
 
         preset: 'Transparent',
@@ -574,6 +581,46 @@
                 compression: 0.15,
                 limiter: -1,
                 stereo: 0
+            }
+        },
+
+
+        'KEMAR Surround': {
+
+            video: {
+                scale: 2,
+                sharpness: 0.12,
+                recovery: 0.08
+            },
+
+            audio: {
+
+                preamp: -1,
+
+                eq: {
+                    b32: 0,
+                    b80: 0.2,
+                    b160: 0.1,
+                    b320: 0,
+                    b640: 0,
+                    b1200: 0,
+                    b2400: 0.1,
+                    b4800: 0.3,
+                    b9600: 0.4,
+                    b16000: 0.5
+                },
+
+                air: 0.4,
+                clarity: 0.08,
+                compression: 0.05,
+                limiter: -1,
+                stereo: 0.15,
+
+                surround: {
+                    enabled: true,
+                    crossfeed: 0.4,
+                    roomSize: 0.3
+                }
             }
         }
     };
@@ -1109,6 +1156,22 @@ function highshelf(
 }
 
 
+function clamp(
+    value,
+    minimum,
+    maximum
+) {
+
+    return Math.max(
+        minimum,
+        Math.min(
+            maximum,
+            value
+        )
+    );
+}
+
+
 class CosmicOTFProcessor
 extends AudioWorkletProcessor {
 
@@ -1164,6 +1227,61 @@ extends AudioWorkletProcessor {
         this.targetGain =
             1;
 
+        this.surroundEnabled =
+            false;
+
+        this.crossfeedAmount =
+            0.3;
+
+        this.roomSize =
+            0;
+
+        this.cfDelay =
+            Math.round(
+                0.00065 *
+                sampleRate
+            );
+
+        this.reflectDelays = [
+
+            Math.round(
+                0.0053 *
+                sampleRate
+            ),
+
+            Math.round(
+                0.0117 *
+                sampleRate
+            ),
+
+            Math.round(
+                0.0193 *
+                sampleRate
+            )
+        ];
+
+        this.reflectGains =
+            [0.15, 0.10, 0.06];
+
+        this.surroundBufL =
+            new Float32Array(
+                2048
+            );
+
+        this.surroundBufR =
+            new Float32Array(
+                2048
+            );
+
+        this.surroundIdx =
+            0;
+
+        this.cfLpL =
+            0;
+
+        this.cfLpR =
+            0;
+
         // The main thread posts { type: 'config', config } every
         // time a slider moves, and { type: 'reset' } on demand.
         this.port.onmessage =
@@ -1192,6 +1310,47 @@ extends AudioWorkletProcessor {
                     this.reset();
                 }
             };
+    }
+
+
+    reset() {
+
+        for (
+            const f of this.eqL
+        ) {
+            f.reset();
+        }
+
+        for (
+            const f of this.eqR
+        ) {
+            f.reset();
+        }
+
+        this.previousL = 0;
+        this.previousR = 0;
+
+        this.historyL =
+            [0, 0, 0];
+
+        this.historyR =
+            [0, 0, 0];
+
+        this.limiterGain = 1;
+        this.targetGain = 1;
+
+        if (this.surroundBufL) {
+
+            this.surroundBufL
+                .fill(0);
+
+            this.surroundBufR
+                .fill(0);
+        }
+
+        this.surroundIdx = 0;
+        this.cfLpL = 0;
+        this.cfLpR = 0;
     }
 
 
@@ -1251,6 +1410,48 @@ extends AudioWorkletProcessor {
         // Coefficients are cheap to recompute and only happen on a
         // config message, not per-sample, so no caching needed.
         this.buildEQ();
+
+        if (c.surround) {
+
+            this.surroundEnabled =
+                !!c.surround.enabled;
+
+            this.crossfeedAmount =
+                Number(
+                    c.surround
+                        .crossfeed ?? 0.3
+                );
+
+            this.roomSize =
+                Number(
+                    c.surround
+                        .roomSize ?? 0
+                );
+
+            this.cfDelay =
+                Math.round(
+                    0.00065 *
+                    sampleRate
+                );
+
+            this.reflectDelays = [
+
+                Math.round(
+                    0.0053 *
+                    sampleRate
+                ),
+
+                Math.round(
+                    0.0117 *
+                    sampleRate
+                ),
+
+                Math.round(
+                    0.0193 *
+                    sampleRate
+                )
+            ];
+        }
     }
 
 
@@ -1751,6 +1952,127 @@ extends AudioWorkletProcessor {
 
 
             /*
+             * KEMAR surround.
+             *
+             * Crossfeed models interaural time and level
+             * differences measured on a KEMAR manikin head:
+             * the opposite ear receives a delayed, low-passed
+             * copy of each channel. Early reflections add a
+             * sense of room around the listener.
+             */
+            if (this.surroundEnabled) {
+
+                const dryL = L;
+                const dryR = R;
+                const size = 2048;
+                const idx =
+                    this.surroundIdx;
+
+                this.surroundBufL[idx] =
+                    dryL;
+
+                this.surroundBufR[idx] =
+                    dryR;
+
+                if (
+                    this.crossfeedAmount > 0
+                ) {
+
+                    const cfIdx =
+                        (idx -
+                        this.cfDelay +
+                        size) %
+                        size;
+
+                    const cfSrcL =
+                        this.surroundBufL[
+                            cfIdx
+                        ];
+
+                    const cfSrcR =
+                        this.surroundBufR[
+                            cfIdx
+                        ];
+
+                    const alpha =
+                        0.65;
+
+                    this.cfLpL =
+                        this.cfLpL *
+                        alpha +
+                        cfSrcL *
+                        (1 - alpha);
+
+                    this.cfLpR =
+                        this.cfLpR *
+                        alpha +
+                        cfSrcR *
+                        (1 - alpha);
+
+                    const amt =
+                        this.crossfeedAmount *
+                        0.35;
+
+                    L =
+                        dryL +
+                        this.cfLpR *
+                        amt;
+
+                    R =
+                        dryR +
+                        this.cfLpL *
+                        amt;
+                }
+
+                if (
+                    this.roomSize > 0
+                ) {
+
+                    for (
+                        let r = 0;
+                        r < 3;
+                        r++
+                    ) {
+
+                        const rIdx =
+                            (idx -
+                            this.reflectDelays[r] +
+                            size) %
+                            size;
+
+                        const rL =
+                            this.surroundBufL[
+                                rIdx
+                            ];
+
+                        const rR =
+                            this.surroundBufR[
+                                rIdx
+                            ];
+
+                        const g =
+                            this.reflectGains[r] *
+                            this.roomSize;
+
+                        L +=
+                            (rR * 0.7 +
+                            rL * 0.3) *
+                            g;
+
+                        R +=
+                            (rL * 0.7 +
+                            rR * 0.3) *
+                            g;
+                    }
+                }
+
+                this.surroundIdx =
+                    (idx + 1) %
+                    size;
+            }
+
+
+            /*
              * Compression.
              */
             L =
@@ -2087,7 +2409,22 @@ registerProcessor(
                         audio.limiter,
 
                     stereo:
-                        audio.stereo
+                        audio.stereo,
+
+                    surround: {
+
+                        enabled:
+                            audio.surround
+                                .enabled,
+
+                        crossfeed:
+                            audio.surround
+                                .crossfeed,
+
+                        roomSize:
+                            audio.surround
+                                .roomSize
+                    }
                 }
             });
     }
@@ -2767,6 +3104,36 @@ void main() {
             'x',
             video.videoHeight
         );
+
+        video.addEventListener(
+            'loadedmetadata',
+            () => {
+
+                resizeVideo();
+
+                updateVideoVisibility();
+            }
+        );
+
+        video.addEventListener(
+            'loadeddata',
+            () => {
+
+                updateVideoVisibility();
+
+                updateStatus();
+            }
+        );
+
+        video.addEventListener(
+            'emptied',
+            () => {
+
+                updateVideoVisibility();
+
+                updateStatus();
+            }
+        );
     }
 
 
@@ -2778,9 +3145,15 @@ void main() {
         if (!STATE.video)
             return;
 
+        const ready =
+            STATE.video.readyState >=
+            HTMLMediaElement
+                .HAVE_CURRENT_DATA;
+
         const active =
             CFG.master &&
-            CFG.video.enabled;
+            CFG.video.enabled &&
+            ready;
 
         STATE.video.style.opacity =
             active
@@ -3688,6 +4061,12 @@ void main() {
             ) ||
             key.includes(
                 'compression'
+            ) ||
+            key.includes(
+                'crossfeed'
+            ) ||
+            key.includes(
+                'roomSize'
             )
         ) {
 
@@ -4119,6 +4498,69 @@ void main() {
                         'Stereo',
                         'audio.stereo',
                         -1,
+                        1,
+                        0.01
+                    )}
+
+                </div>
+
+            </div>
+
+
+            <!-- KEMAR SURROUND -->
+
+            <div class="cotf-section">
+
+                <div
+                    class="cotf-section-header"
+                    data-collapse="surround"
+                >
+
+                    <span class="cotf-section-title">
+                        KEMAR SURROUND
+                    </span>
+
+                    <span>
+                        ▼
+                    </span>
+
+                </div>
+
+
+                <div
+                    class="cotf-content"
+                    data-section="surround"
+                >
+
+                    <div class="cotf-row">
+
+                        <span class="cotf-label">
+                            Enabled
+                        </span>
+
+                        <span></span>
+
+                        <div
+                            class="cotf-switch"
+                            data-surround-switch
+                        ></div>
+
+                    </div>
+
+
+                    ${slider(
+                        'Crossfeed',
+                        'audio.surround.crossfeed',
+                        0,
+                        1,
+                        0.01
+                    )}
+
+
+                    ${slider(
+                        'Room size',
+                        'audio.surround.roomSize',
+                        0,
                         1,
                         0.01
                     )}
@@ -4573,6 +5015,25 @@ void main() {
         );
 
 
+        panel.querySelector(
+            '[data-surround-switch]'
+        ).addEventListener(
+            'click',
+            () => {
+
+                CFG.audio.surround.enabled =
+                    !CFG.audio.surround
+                        .enabled;
+
+                sendAudioConfig();
+
+                refreshGUI();
+
+                saveConfig();
+            }
+        );
+
+
         panel.querySelectorAll(
             'input[data-key]'
         ).forEach(
@@ -4949,6 +5410,21 @@ void main() {
             'on',
             CFG.audio.enabled
         );
+
+
+        const surroundSwitch =
+            STATE.panel.querySelector(
+                '[data-surround-switch]'
+            );
+
+        if (surroundSwitch) {
+
+            surroundSwitch.classList.toggle(
+                'on',
+                CFG.audio.surround
+                    .enabled
+            );
+        }
 
 
         const preset =
@@ -5412,6 +5888,42 @@ void main() {
         setInterval(
             monitorPlayer,
             750
+        );
+
+        let observerTimer = null;
+
+        new MutationObserver(
+            () => {
+
+                if (observerTimer)
+                    return;
+
+                observerTimer =
+                    setTimeout(
+                        () => {
+
+                            observerTimer =
+                                null;
+
+                            monitorPlayer();
+                        },
+                        200
+                    );
+            }
+        ).observe(
+            document.body,
+            {
+                childList: true,
+                subtree: true
+            }
+        );
+
+        document.addEventListener(
+            'yt-navigate-finish',
+            () => {
+
+                monitorPlayer();
+            }
         );
 
         STATE.videoRAF =
