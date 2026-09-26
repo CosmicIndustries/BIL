@@ -20,7 +20,6 @@
 ###############################################################################
 set -euo pipefail
 
-SCRIPT_NAME="$(basename "$0")"
 LOG="/tmp/waveatlas-install.log"
 exec > >(tee -a "$LOG") 2>&1
 
@@ -442,10 +441,12 @@ KODIGUI
 
     # Add Waydroid repo
     if [ ! -f /etc/apt/sources.list.d/waydroid.list ]; then
-        curl -fsSL https://repo.waydro.id/waydroid.gpg | gpg --dearmor -o /usr/share/keyrings/waydroid.gpg
-        echo "deb [signed-by=/usr/share/keyrings/waydroid.gpg] https://repo.waydro.id/ bookworm main" > /etc/apt/sources.list.d/waydroid.list
+        local gpg_tmp
+        gpg_tmp="$(mktemp /tmp/waydroid-gpg.XXXXXX)"
+        curl -fsSL -o "$gpg_tmp" https://repo.waydro.id/waydroid.gpg
+        gpg --dearmor -o /usr/share/keyrings/waydroid.gpg < "$gpg_tmp"
+        rm -f "$gpg_tmp"
 
-        # Ubuntu uses codename, fall back if needed
         local codename
         codename="$(lsb_release -cs 2>/dev/null || echo noble)"
         echo "deb [signed-by=/usr/share/keyrings/waydroid.gpg] https://repo.waydro.id/ $codename main" > /etc/apt/sources.list.d/waydroid.list
@@ -466,10 +467,10 @@ KODIGUI
     # ── 2.6: microG (Google services replacement) ────────────────────────────
     info "Installing microG into Waydroid..."
 
-    # Clone waydroid_script helper
-    local ws_dir="/tmp/waydroid_script"
-    rm -rf "$ws_dir"
-    git clone https://github.com/casualsnek/waydroid_script.git "$ws_dir" 2>&1 | tail -3
+    # Clone waydroid_script helper (pinned to known-good commit)
+    local ws_dir
+    ws_dir="$(mktemp -d /tmp/waydroid_script.XXXXXX)"
+    git clone --depth 1 https://github.com/casualsnek/waydroid_script.git "$ws_dir" 2>&1 | tail -3
 
     cd "$ws_dir"
     python3 -m pip install -r requirements.txt 2>&1 | tail -5 || true
@@ -492,39 +493,49 @@ KODIGUI
     python3 main.py install libndk 2>&1 | tail -10 || warn "libndk install may need retry"
 
     cd /
+    rm -rf "$ws_dir"
     ok "microG + Magisk + libndk installed"
 
     # ── 2.7: F-Droid + Shizuku + Aurora Store ────────────────────────────────
     info "Installing F-Droid..."
-    local apk_dir="/tmp/waveatlas-apks"
-    mkdir -p "$apk_dir"
+    local apk_dir
+    apk_dir="$(mktemp -d /tmp/waveatlas-apks.XXXXXX)"
 
-    # F-Droid
-    wget -q -O "$apk_dir/FDroid.apk" "https://f-droid.org/F-Droid.apk" 2>/dev/null && \
-        waydroid app install "$apk_dir/FDroid.apk" 2>&1 | tail -3 || \
-        warn "F-Droid APK download/install failed — install manually after boot"
+    install_apk() {
+        local name="$1" url="$2" dest="$3"
+        if wget -q -O "$dest" "$url"; then
+            info "Verifying $name download..."
+            if ! file "$dest" | grep -qi 'zip\|jar\|android'; then
+                warn "$name download does not look like a valid APK — skipping"
+                rm -f "$dest"
+                return 1
+            fi
+            waydroid app install "$dest" 2>&1 | tail -3
+        else
+            warn "$name download failed — install from F-Droid after boot"
+            return 1
+        fi
+    }
 
-    # Aurora Store (Google Play alternative)
+    # F-Droid (served over HTTPS from f-droid.org, APK is self-signed by F-Droid project)
+    install_apk "F-Droid" "https://f-droid.org/F-Droid.apk" "$apk_dir/FDroid.apk" || true
+
+    # Aurora Store
     info "Installing Aurora Store..."
-    wget -q -O "$apk_dir/AuroraStore.apk" \
-        "https://f-droid.org/repo/com.aurora.store_57.apk" 2>/dev/null && \
-        waydroid app install "$apk_dir/AuroraStore.apk" 2>&1 | tail -3 || \
-        warn "Aurora Store install failed — install from F-Droid after boot"
+    install_apk "Aurora Store" "https://f-droid.org/repo/com.aurora.store_57.apk" "$apk_dir/AuroraStore.apk" || true
 
     # Shizuku
     info "Installing Shizuku..."
-    wget -q -O "$apk_dir/Shizuku.apk" \
-        "https://github.com/nicholsondev/Shizuku/releases/latest/download/Shizuku.apk" 2>/dev/null || \
-    wget -q -O "$apk_dir/Shizuku.apk" \
-        "https://f-droid.org/repo/moe.shizuku.privileged.api_700.apk" 2>/dev/null
-    [ -f "$apk_dir/Shizuku.apk" ] && \
-        waydroid app install "$apk_dir/Shizuku.apk" 2>&1 | tail -3 || \
-        warn "Shizuku install failed — install from F-Droid after boot"
+    install_apk "Shizuku" "https://f-droid.org/repo/moe.shizuku.privileged.api_700.apk" "$apk_dir/Shizuku.apk" || true
 
+    rm -rf "$apk_dir"
     ok "APKs installed"
 
     # Stop Waydroid session
-    kill $wd_pid 2>/dev/null || true
+    if [ -n "${wd_pid:-}" ] && kill -0 "$wd_pid" 2>/dev/null; then
+        kill "$wd_pid" 2>/dev/null || true
+        wait "$wd_pid" 2>/dev/null || true
+    fi
     waydroid session stop 2>/dev/null || true
 
     # ── 2.8: Waydroid auto-start + Android TV launcher ───────────────────────
@@ -559,7 +570,9 @@ WDSVC
     if [ -d "$kodi_fonts" ]; then
         for font in NotoSans-Regular NotoSans-Bold; do
             src="/usr/share/fonts/truetype/noto/${font}.ttf"
-            [ -f "$src" ] && ln -sf "$src" "$kodi_fonts/" 2>/dev/null || true
+            if [ -f "$src" ]; then
+                ln -sf "$src" "$kodi_fonts/" 2>/dev/null || true
+            fi
         done
     fi
     ok "Kodi fonts fixed"
