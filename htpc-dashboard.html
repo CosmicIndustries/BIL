@@ -491,6 +491,8 @@
   var SONAR_SPEED = 0.03;
   var sonarDataA = new Float32Array(BANDS);
   var sonarDataB = new Float32Array(BANDS);
+  var _noiseSeed = 1;
+  function noise01() { _noiseSeed = (_noiseSeed * 16807 + 0) % 2147483647; return (_noiseSeed & 0x7fffffff) / 2147483647; }
   var HRTF_PROFILES = ["default", "small_room", "medium_room", "large_room", "anechoic", "outdoor"];
 
   function genSonarFrame(data, profile, isActive) {
@@ -507,7 +509,7 @@
       var env = Math.exp(-Math.pow((norm - center) * spread, 2)) * peak;
       env += Math.exp(-Math.pow((norm - 0.5) * 3, 2)) * peak * 0.25;
       if (isActive) {
-        data[i] = env * (0.5 + 0.5 * Math.random());
+        data[i] = env * (0.5 + 0.5 * noise01());
       } else {
         data[i] *= 0.92;
       }
@@ -543,7 +545,7 @@
       var val = data[di];
       if (val < 0.03) continue;
       var dist = ((di + 1) / BANDS) * radius;
-      var jitter = (Math.random() - 0.5) * 0.04;
+      var jitter = (noise01() - 0.5) * 0.04;
       var px = cx + Math.cos(angle + jitter) * dist;
       var py = cy + Math.sin(angle + jitter) * dist;
       var dotR = 1 + val * 2.5;
