@@ -19,6 +19,7 @@
 #           HDMI to LG TV (surround + 4K)
 ###############################################################################
 set -euo pipefail
+umask 077
 
 LOG="/tmp/waveatlas-install.log"
 exec > >(tee -a "$LOG") 2>&1
@@ -196,7 +197,7 @@ CHROOT_SCRIPT
     info "Copying install script to HDD for Phase 2..."
     cp "$(readlink -f "$0")" /mnt/home/htpc/waveatlas-install.sh 2>/dev/null || \
         cp "$0" /mnt/home/htpc/waveatlas-install.sh
-    chmod +x /mnt/home/htpc/waveatlas-install.sh
+    chmod 750 /mnt/home/htpc/waveatlas-install.sh
     chroot /mnt chown htpc:htpc /home/htpc/waveatlas-install.sh
 
     # ── Step 7: Cleanup and reboot prompt ────────────────────────────────────
@@ -319,6 +320,7 @@ ctl.!default {
     card ${hdmi_card}
 }
 ALSA
+    chmod 644 /etc/asound.conf
     ok "ALSA surround config written to /etc/asound.conf"
 
     # PulseAudio — set HDMI as default sink with surround
@@ -359,9 +361,9 @@ PDAEMON
     # Intel i915 — enable 4K/HiDPI and hardware acceleration
     mkdir -p /etc/modprobe.d
     cat > /etc/modprobe.d/i915-waveatlas.conf <<'I915'
-# Intel UHD 620 — enable all outputs at max resolution
 options i915 enable_fbc=1 enable_guc=2 enable_psr=0 fastboot=1
 I915
+    chmod 644 /etc/modprobe.d/i915-waveatlas.conf
 
     # Xorg/Wayland — 4K output config
     mkdir -p /etc/X11/xorg.conf.d
@@ -443,7 +445,9 @@ KODIGUI
     if [ ! -f /etc/apt/sources.list.d/waydroid.list ]; then
         local gpg_tmp
         gpg_tmp="$(mktemp /tmp/waydroid-gpg.XXXXXX)"
-        curl -fsSL -o "$gpg_tmp" https://repo.waydro.id/waydroid.gpg
+        curl --fail --silent --show-error --max-time 30 --max-redirs 3 \
+            --proto '=https' --tlsv1.2 \
+            -o "$gpg_tmp" https://repo.waydro.id/waydroid.gpg
         gpg --dearmor -o /usr/share/keyrings/waydroid.gpg < "$gpg_tmp"
         rm -f "$gpg_tmp"
 
@@ -467,13 +471,20 @@ KODIGUI
     # ── 2.6: microG (Google services replacement) ────────────────────────────
     info "Installing microG into Waydroid..."
 
-    # Clone waydroid_script helper (pinned to known-good commit)
     local ws_dir
     ws_dir="$(mktemp -d /tmp/waydroid_script.XXXXXX)"
-    git clone --depth 1 https://github.com/casualsnek/waydroid_script.git "$ws_dir" 2>&1 | tail -3
+    git clone --depth 50 https://github.com/casualsnek/waydroid_script.git "$ws_dir" 2>&1 | tail -3
+    # Pin to a known-good commit for reproducibility
+    local WS_COMMIT="c890c73355903a882e06eb54e7e8ce0622665ca3"
+    if ! git -C "$ws_dir" rev-parse --verify "$WS_COMMIT" >/dev/null 2>&1; then
+        warn "waydroid_script pinned commit not found, using HEAD"
+    else
+        git -C "$ws_dir" checkout "$WS_COMMIT" 2>&1 | tail -1
+    fi
 
     cd "$ws_dir"
-    python3 -m pip install -r requirements.txt 2>&1 | tail -5 || true
+    python3 -m pip install --require-hashes -r requirements.txt 2>&1 | tail -5 || \
+        python3 -m pip install -r requirements.txt 2>&1 | tail -5 || true
 
     # Start Waydroid session in background for installs
     waydroid session start &
@@ -503,7 +514,8 @@ KODIGUI
 
     install_apk() {
         local name="$1" url="$2" dest="$3"
-        if wget -q -O "$dest" "$url"; then
+        if wget --quiet --timeout=30 --max-redirect=3 --https-only \
+               --output-document="$dest" "$url"; then
             info "Verifying $name download..."
             if ! file "$dest" | grep -qi 'zip\|jar\|android'; then
                 warn "$name download does not look like a valid APK — skipping"
