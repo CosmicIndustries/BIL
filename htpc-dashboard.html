@@ -1,0 +1,1180 @@
+<title>Phase Console</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0a0a12; --surface: #12121e; --surface-raised: #1a1a2e;
+    --border: #252540; --text: #c8c8e0; --text-bright: #eeeef8; --text-dim: #5a5a80;
+    --amber: #f0a830; --amber-dim: rgba(240,168,48,0.12); --amber-border: rgba(240,168,48,0.3);
+    --teal: #44ccaa; --teal-dim: rgba(68,204,170,0.1); --teal-border: rgba(68,204,170,0.2);
+    --lavender: #bb88cc; --lavender-dim: rgba(187,136,204,0.1); --lavender-border: rgba(187,136,204,0.25);
+    --blue: #5599cc; --blue-dim: rgba(85,153,204,0.1); --blue-border: rgba(85,153,204,0.25);
+    --red: #cc5555; --red-dim: rgba(204,85,85,0.1); --red-border: rgba(204,85,85,0.2);
+    --cyan: #44bbdd; --cyan-dim: rgba(68,187,221,0.1); --cyan-border: rgba(68,187,221,0.2);
+    --green: #55cc66; --green-dim: rgba(85,204,102,0.1); --green-border: rgba(85,204,102,0.2);
+    --warn: #e8b830;
+    --pill-r: 20px;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg:#eeeae4;--surface:#faf8f4;--surface-raised:#f0ede6;--border:#d0ccc4;--text:#2c2a26;--text-bright:#141310;--text-dim:#8a8678;
+      --amber:#a06808;--amber-dim:rgba(160,104,8,0.08);--amber-border:rgba(160,104,8,0.2);
+      --teal:#1a8868;--teal-dim:rgba(26,136,104,0.06);--teal-border:rgba(26,136,104,0.12);
+      --lavender:#7a5088;--lavender-dim:rgba(122,80,136,0.06);--lavender-border:rgba(122,80,136,0.15);
+      --blue:#2a6090;--blue-dim:rgba(42,96,144,0.06);--blue-border:rgba(42,96,144,0.15);
+      --red:#b03030;--red-dim:rgba(176,48,48,0.06);--red-border:rgba(176,48,48,0.15);
+      --cyan:#1a8899;--cyan-dim:rgba(26,136,153,0.06);--cyan-border:rgba(26,136,153,0.15);
+      --green:#2a8838;--green-dim:rgba(42,136,56,0.06);--green-border:rgba(42,136,56,0.15);
+      --warn:#a08010;
+      color-scheme: light;
+    }
+  }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  :root[data-theme="light"] {
+    --bg:#eeeae4;--surface:#faf8f4;--surface-raised:#f0ede6;--border:#d0ccc4;--text:#2c2a26;--text-bright:#141310;--text-dim:#8a8678;
+    --amber:#a06808;--amber-dim:rgba(160,104,8,0.08);--amber-border:rgba(160,104,8,0.2);
+    --teal:#1a8868;--teal-dim:rgba(26,136,104,0.06);--teal-border:rgba(26,136,104,0.12);
+    --lavender:#7a5088;--lavender-dim:rgba(122,80,136,0.06);--lavender-border:rgba(122,80,136,0.15);
+    --blue:#2a6090;--blue-dim:rgba(42,96,144,0.06);--blue-border:rgba(42,96,144,0.15);
+    --red:#b03030;--red-dim:rgba(176,48,48,0.06);--red-border:rgba(176,48,48,0.15);
+    --cyan:#1a8899;--cyan-dim:rgba(26,136,153,0.06);--cyan-border:rgba(26,136,153,0.15);
+    --green:#2a8838;--green-dim:rgba(42,136,56,0.06);--green-border:rgba(42,136,56,0.15);
+    --warn:#a08010;
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { height: 100%; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Exo 2', system-ui, sans-serif;
+    font-size: 14px; line-height: 1.5;
+    padding-inline: 16px; padding-block: 0;
+    min-height: 100%; display: flex; flex-direction: column;
+  }
+
+  /* ── Header ── */
+  .header { display:flex; align-items:stretch; padding:12px 0 0; position:sticky; top:env(safe-area-inset-top,0px); background:var(--bg); z-index:10; }
+  .header-accent { width:6px; background:var(--amber); border-radius:var(--pill-r) 0 0 var(--pill-r); flex-shrink:0; }
+  .header-main {
+    flex:1; display:flex; align-items:center; justify-content:space-between;
+    background:var(--surface); border:1px solid var(--border); border-left:none;
+    border-radius:0 var(--pill-r) var(--pill-r) 0; padding:10px 16px 10px 12px; gap:8px;
+  }
+  .wordmark { font-weight:800; font-size:18px; letter-spacing:0.06em; text-transform:uppercase; color:var(--amber); white-space:nowrap; }
+  .wordmark-sep { color:var(--lavender); }
+  .header-right { display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-dim); }
+  .hdr-btn {
+    background:none; border:1px solid var(--border); border-radius:6px;
+    width:30px; height:30px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--text-dim); font-size:13px; font-weight:700; font-family:inherit;
+    transition:all 0.12s;
+  }
+  .hdr-btn:hover { border-color:var(--lavender-border); color:var(--lavender); }
+  .hdr-btn.active { background:var(--lavender-dim); border-color:var(--lavender-border); color:var(--lavender); }
+  .hdr-btn.active-green { background:var(--green-dim); border-color:var(--green-border); color:var(--green); }
+  .hdr-btn.active-cyan { background:var(--cyan-dim); border-color:var(--cyan-border); color:var(--cyan); }
+  .status-pill {
+    display:inline-flex; align-items:center; gap:5px;
+    font-size:10px; font-weight:700; letter-spacing:0.06em;
+    text-transform:uppercase; padding:3px 10px 3px 8px; border-radius:var(--pill-r);
+  }
+  .status-pill.on { background:var(--teal-dim); color:var(--teal); border:1px solid var(--teal-border); }
+  .status-pill.off { background:var(--red-dim); color:var(--red); border:1px solid var(--red-border); }
+  .status-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+  /* ── Host bar ── */
+  .host-bar { display:flex; gap:6px; align-items:center; padding:10px 0; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .host-bar::-webkit-scrollbar { display:none; }
+  .host-tab {
+    display:inline-flex; align-items:center; background:var(--surface); border:1px solid var(--border);
+    border-radius:0 var(--pill-r) var(--pill-r) 0; padding:8px 14px 8px 10px;
+    font-family:inherit; font-size:13px; font-weight:600; color:var(--text-dim);
+    cursor:pointer; white-space:nowrap; transition:all 0.15s; border-left:3px solid var(--border);
+  }
+  .host-tab:active { transform:scale(0.97); }
+  .host-tab.active { background:var(--amber-dim); border-color:var(--amber-border); border-left-color:var(--amber); color:var(--amber); }
+  .host-tab.connected { border-left-color:var(--teal); }
+  .host-tab.connected.active { border-left-color:var(--amber); }
+  .add-btn {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:36px; height:36px; flex-shrink:0; background:var(--surface);
+    border:1px dashed var(--border); border-radius:var(--pill-r);
+    font-size:18px; color:var(--text-dim); cursor:pointer; font-family:inherit;
+  }
+  .add-btn:active { transform:scale(0.95); }
+
+  /* ── Layout ── */
+  .layout { display:flex; flex-direction:column; gap:10px; flex:1; padding-bottom:16px; }
+  @media (min-width:768px) {
+    .layout { flex-direction:row; }
+    .sidebar { width:260px; flex-shrink:0; }
+    .main { flex:1; min-width:0; display:flex; flex-direction:column; gap:10px; }
+  }
+
+  /* ── Semantic group panels ── */
+  .panel {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:0 14px 14px 0; overflow:hidden; border-left:3px solid var(--border);
+  }
+  .panel.amber { border-left-color:var(--amber); }
+  .panel.teal { border-left-color:var(--teal); }
+  .panel.lavender { border-left-color:var(--lavender); }
+  .panel.blue { border-left-color:var(--blue); }
+  .panel.red { border-left-color:var(--red); }
+  .panel.cyan { border-left-color:var(--cyan); }
+  .panel.green { border-left-color:var(--green); }
+  .panel + .panel { margin-top:8px; }
+  .panel-head {
+    display:flex; align-items:center; justify-content:space-between; padding:8px 12px;
+    font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-dim);
+    border-bottom:1px solid var(--border);
+  }
+  .panel-head .badge {
+    font-size:9px; padding:2px 7px; border-radius:10px; font-weight:700;
+    background:var(--teal-dim); color:var(--teal); border:1px solid var(--teal-border);
+  }
+  .panel-body { padding:8px; }
+
+  /* ── Command buttons ── */
+  .cmd-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+  @media (min-width:768px) { .cmd-grid.wide { grid-template-columns:1fr 1fr 1fr; } }
+  .cmd-btn {
+    display:flex; align-items:center; gap:7px;
+    background:var(--surface-raised); border:1px solid var(--border);
+    border-radius:0 10px 10px 0; border-left:2px solid var(--border);
+    padding:9px 8px; cursor:pointer; transition:all 0.12s; font-family:inherit; color:var(--text);
+  }
+  .cmd-btn:active { transform:scale(0.97); background:var(--border); }
+  .cmd-btn:focus-visible { outline:2px solid var(--blue); outline-offset:1px; }
+  .cmd-key {
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:20px; height:20px; border-radius:4px;
+    background:var(--bg); border:1px solid var(--border);
+    font-size:10px; font-weight:700; color:var(--text-dim);
+    font-family:'IBM Plex Mono',monospace; flex-shrink:0;
+  }
+  .cmd-name { font-size:11px; font-weight:600; color:var(--text-bright); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cmd-btn.amber { border-left-color:var(--amber); }
+  .cmd-btn.amber .cmd-key { border-color:var(--amber-border); color:var(--amber); }
+  .cmd-btn.teal { border-left-color:var(--teal); }
+  .cmd-btn.teal .cmd-key { border-color:var(--teal-border); color:var(--teal); }
+  .cmd-btn.lavender { border-left-color:var(--lavender); }
+  .cmd-btn.lavender .cmd-key { border-color:var(--lavender-border); color:var(--lavender); }
+  .cmd-btn.red { border-left-color:var(--red); }
+  .cmd-btn.red .cmd-key { border-color:var(--red-border); color:var(--red); }
+  .cmd-btn.cyan { border-left-color:var(--cyan); }
+  .cmd-btn.cyan .cmd-key { border-color:var(--cyan-border); color:var(--cyan); }
+  .cmd-btn.green { border-left-color:var(--green); }
+  .cmd-btn.green .cmd-key { border-color:var(--green-border); color:var(--green); }
+
+  /* ── Visual tiles ── */
+  .tile-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:8px; }
+  @media (min-width:768px) { .tile-grid { grid-template-columns:1fr 1fr 1fr 1fr; } }
+  .tile {
+    background:var(--surface-raised); border:1px solid var(--border);
+    border-radius:0 10px 10px 0; padding:10px; border-left:2px solid var(--border);
+    min-height:60px; display:flex; flex-direction:column; justify-content:space-between;
+  }
+  .tile-label { font-size:9px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim); }
+  .tile-value { font-size:18px; font-weight:700; font-family:'IBM Plex Mono',monospace; color:var(--text-bright); margin-top:4px; }
+  .tile-sub { font-size:10px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; }
+  .tile.amber { border-left-color:var(--amber); } .tile.amber .tile-value { color:var(--amber); }
+  .tile.teal { border-left-color:var(--teal); } .tile.teal .tile-value { color:var(--teal); }
+  .tile.lavender { border-left-color:var(--lavender); } .tile.lavender .tile-value { color:var(--lavender); }
+  .tile.blue { border-left-color:var(--blue); } .tile.blue .tile-value { color:var(--blue); }
+  .tile.red { border-left-color:var(--red); } .tile.red .tile-value { color:var(--red); }
+  .tile.cyan { border-left-color:var(--cyan); } .tile.cyan .tile-value { color:var(--cyan); }
+  .tile.green { border-left-color:var(--green); } .tile.green .tile-value { color:var(--green); }
+
+  /* ── Meter bar ── */
+  .meter { height:4px; background:var(--border); border-radius:2px; margin-top:6px; overflow:hidden; }
+  .meter-fill { height:100%; border-radius:2px; transition:width 0.3s; }
+
+  /* ── Sonar canvas ── */
+  .sonar-wrap { position:relative; width:100%; border-radius:0 10px 10px 0; overflow:hidden; background:#0a0a12; }
+  .sonar-wrap canvas { display:block; width:100%; height:200px; }
+  @media (min-width:768px) { .sonar-wrap canvas { height:260px; } }
+  .sonar-overlay {
+    position:absolute; bottom:6px; left:8px; right:8px;
+    display:flex; justify-content:space-between;
+    font-size:9px; font-family:'IBM Plex Mono',monospace; color:rgba(200,200,224,0.5); pointer-events:none;
+  }
+
+  /* ── A/B compare ── */
+  .ab-row { display:flex; gap:8px; }
+  .ab-col { flex:1; min-width:0; }
+  .ab-label {
+    font-size:10px; font-weight:700; letter-spacing:0.06em;
+    text-transform:uppercase; padding:6px 10px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .ab-label.a { color:var(--teal); }
+  .ab-label.b { color:var(--amber); }
+  .ab-select {
+    background:var(--bg); border:1px solid var(--border); border-radius:6px;
+    padding:3px 6px; font-family:inherit; font-size:10px; font-weight:600;
+    color:inherit; cursor:pointer;
+  }
+
+  /* ── Video feed ── */
+  .video-wrap { background:#000; overflow:hidden; }
+  .video-wrap video { display:block; width:100%; height:140px; object-fit:cover; }
+  @media (min-width:768px) { .video-wrap video { height:200px; } }
+
+  /* ── Mic level ── */
+  .mic-bar { display:flex; align-items:center; gap:10px; padding:10px 12px; }
+  .mic-level { flex:1; height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+  .mic-level-fill { height:100%; border-radius:3px; background:var(--green); transition:width 0.05s; width:0; }
+  .mic-db { font-size:11px; font-family:'IBM Plex Mono',monospace; color:var(--green); min-width:55px; text-align:right; }
+
+  /* ── Activity log ── */
+  .log-body {
+    max-height:100px; overflow-y:auto; padding:6px 10px;
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; line-height:1.5;
+    -webkit-user-select:text; user-select:text;
+  }
+  @media (min-width:768px) { .log-body { max-height:140px; } }
+  .log-body:empty::after { content:"Waiting for activity\2026"; color:var(--text-dim); font-style:italic; }
+
+  /* ── Connect card ── */
+  .connect-card {
+    display:flex; align-items:center; gap:12px;
+    background:var(--amber-dim); border:1px solid var(--amber-border);
+    border-radius:0 14px 14px 0; border-left:3px solid var(--amber);
+    padding:16px; cursor:pointer; transition:all 0.12s; margin-bottom:8px;
+  }
+  .connect-card:active { transform:scale(0.98); }
+
+  /* ── Settings ── */
+  .ss-body { padding:10px 14px; }
+  .host-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+  .host-row:last-child { border-bottom:none; }
+  .host-info { flex:1; min-width:0; }
+  .host-label { font-size:13px; font-weight:600; color:var(--text-bright); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .host-addr { font-size:11px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; }
+  .icon-btn {
+    background:var(--surface-raised); border:1px solid var(--border); border-radius:6px;
+    width:30px; height:30px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--text-dim); font-size:13px; transition:all 0.12s; font-family:inherit;
+  }
+  .icon-btn:hover { color:var(--text); border-color:var(--text-dim); }
+  .icon-btn.danger:hover { color:var(--red); border-color:var(--red); }
+  .setting-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; gap:12px; }
+  .setting-row + .setting-row { border-top:1px solid var(--border); }
+  .setting-label { font-size:12px; font-weight:600; color:var(--text-bright); }
+  .setting-hint { font-size:10px; color:var(--text-dim); margin-top:2px; }
+  .seg-control { display:inline-flex; background:var(--bg); border:1px solid var(--border); border-radius:8px; overflow:hidden; flex-shrink:0; }
+  .seg-btn {
+    background:none; border:none; padding:6px 10px; font-family:inherit;
+    font-size:11px; font-weight:600; color:var(--text-dim); cursor:pointer; transition:all 0.12s;
+  }
+  .seg-btn.active { background:var(--lavender-dim); color:var(--lavender); }
+  .seg-btn + .seg-btn { border-left:1px solid var(--border); }
+  .add-host-btn {
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    width:100%; padding:10px; margin-top:6px;
+    background:var(--amber-dim); border:1px dashed var(--amber-border);
+    border-radius:0 10px 10px 0; border-left:2px solid var(--amber);
+    cursor:pointer; font-family:inherit; font-size:12px; font-weight:700; color:var(--amber);
+  }
+  .shortcut-grid { display:grid; grid-template-columns:auto 1fr; gap:4px 12px; align-items:center; font-size:12px; }
+  .shortcut-grid kbd {
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:24px; height:22px; padding:0 6px;
+    background:var(--bg); border:1px solid var(--border); border-radius:4px;
+    font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:700; color:var(--lavender);
+  }
+  .stop-badge {
+    font-size:9px; padding:2px 7px; border-radius:10px; font-weight:700; font-family:inherit;
+    background:var(--red-dim); color:var(--red); border:1px solid var(--red-border);
+    cursor:pointer; letter-spacing:0.06em; text-transform:uppercase;
+  }
+  .stop-badge:hover { background:var(--red); color:var(--bg); }
+
+  /* ── Modal ── */
+  .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:100; display:flex; align-items:flex-end; justify-content:center; padding:16px; }
+  .modal-bg[hidden] { display:none; }
+  @media (min-width:768px) { .modal-bg { align-items:center; } }
+  .modal-box { background:var(--surface); border:1px solid var(--border); border-radius:20px 20px 14px 14px; width:100%; max-width:400px; padding:20px; border-top:3px solid var(--amber); }
+  @media (min-width:768px) { .modal-box { border-radius:14px; border-top:3px solid var(--amber); } }
+  .modal-title { font-size:16px; font-weight:700; color:var(--text-bright); margin:0 0 4px; }
+  .modal-sub { font-size:12px; color:var(--text-dim); margin:0 0 14px; }
+  .mf { display:flex; flex-direction:column; gap:5px; margin-bottom:10px; }
+  .mf label { font-size:10px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-dim); }
+  .mf input { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-family:inherit; font-size:14px; color:var(--text); outline:none; }
+  .mf input:focus { border-color:var(--amber-border); }
+  .mf input::placeholder { color:var(--text-dim); }
+  .m-actions { display:flex; gap:8px; margin-top:14px; }
+  .m-actions button { flex:1; padding:11px; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; border:none; letter-spacing:0.02em; }
+  .m-cancel { background:var(--surface-raised); color:var(--text); border-radius:10px 0 0 10px; }
+  .m-ok { background:var(--amber); color:var(--bg); border-radius:0 10px 10px 0; }
+  .m-delete { background:var(--red-dim); color:var(--red); border-radius:10px; border:1px solid var(--red-border); }
+  .m-actions button:active { transform:scale(0.98); }
+
+  .tip {
+    display:flex; align-items:flex-start; gap:10px;
+    background:var(--lavender-dim); border:1px solid var(--lavender-border);
+    border-radius:0 14px 14px 0; border-left:3px solid var(--lavender);
+    padding:10px 12px; font-size:12px; color:var(--text); margin-bottom:8px;
+  }
+
+  @media (prefers-reduced-motion:reduce) { * { transition:none !important; animation:none !important; } }
+</style>
+
+<div class="header">
+  <div class="header-accent"></div>
+  <div class="header-main">
+    <div class="wordmark">Phase<span class="wordmark-sep"> / </span>Console</div>
+    <div class="header-right">
+      <span id="clock">--:--</span>
+      <div class="status-pill off" id="sPill"><span class="status-dot"></span><span id="sText">offline</span></div>
+      <button class="hdr-btn" id="micBtn" title="Microphone (M)" hidden>M</button>
+      <button class="hdr-btn" id="vidBtn" title="Video (V)" hidden>V</button>
+      <button class="hdr-btn" id="abBtn" title="A/B Compare">A|B</button>
+      <button class="hdr-btn" id="gearBtn" title="Settings">&#9881;</button>
+    </div>
+  </div>
+</div>
+<div id="hostBar" class="host-bar"></div>
+<div id="layout" class="layout"></div>
+<div class="modal-bg" id="modal" hidden></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var VIEW_CONSOLE = 0, VIEW_SETTINGS = 1;
+  var hosts, activeIdx, connectedSet, activityLog, tipDismissed, currentView, prefs;
+  var abMode = false;
+  var animId = null;
+  var tileState = {};
+  var playingSet = {};
+
+  var micActive = false, micStream = null, audioCtx = null, analyserNode = null;
+  var vidActive = false, vidStream = null;
+
+  function loadStore(k, fb) { try { var v = localStorage.getItem(k); return v !== null ? JSON.parse(v) : fb; } catch (e) { return fb; } }
+  function saveStore(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* noop */ } }
+
+  function init() {
+    hosts = loadStore("pc_hosts", [{ user: "htpc", host: "htpc", label: "HTPC" }]);
+    activeIdx = 0; connectedSet = {}; activityLog = {}; tileState = {};
+    tipDismissed = loadStore("pc_tip_off", false);
+    currentView = VIEW_CONSOLE;
+    prefs = loadStore("pc_prefs", { theme: "system", hrtfProfile: "medium_room", hrtfProfileB: "anechoic", bitDepth: 32, sampleRate: 48000 });
+  }
+
+  function applyTheme(c) {
+    if (c === "dark") document.documentElement.dataset.theme = "dark";
+    else if (c === "light") document.documentElement.dataset.theme = "light";
+    else delete document.documentElement.dataset.theme;
+  }
+
+  // ── Semantic color map ──
+  // amber = audio/hardware, cyan = HRTF/spatial, teal = playback, lavender = system, blue = data, red = alerts, green = input/adaptive
+  var CMDS = [
+    { id:"detect",    key:"1", name:"Detect",    group:"audio",  color:"amber" },
+    { id:"volume",    key:"2", name:"Volume",    group:"audio",  color:"amber" },
+    { id:"engine",    key:"3", name:"Engine",    group:"audio",  color:"amber" },
+    { id:"calibrate", key:"4", name:"Calibrate", group:"hrtf",   color:"cyan" },
+    { id:"spatial",   key:"5", name:"Spatial",   group:"hrtf",   color:"cyan" },
+    { id:"play",      key:"6", name:"Play",      group:"play",   color:"teal" },
+    { id:"stop",      key:"7", name:"Stop",      group:"play",   color:"red" },
+    { id:"uptime",    key:"8", name:"Uptime",    group:"system", color:"lavender" },
+    { id:"memory",    key:"9", name:"Memory",    group:"system", color:"lavender" },
+    { id:"disk",      key:"0", name:"Disk",      group:"system", color:"lavender" },
+    { id:"top",       key:"T", name:"Top",       group:"system", color:"lavender" }
+  ];
+
+  var TILE_DATA = {
+    detect: [
+      { id:"sink",   label:"Sink",   value:"HDMI Stereo",  sub:"PipeWire 1.0",  color:"amber" },
+      { id:"format", label:"Format", value:"S32LE",        sub:"32-bit PCM",    color:"amber" },
+      { id:"rate",   label:"Rate",   value:"48 kHz",       sub:"2ch stereo",    color:"amber" },
+      { id:"state",  label:"State",  value:"RUNNING",      sub:"sink #60",      color:"teal" }
+    ],
+    volume: [
+      { id:"volL", label:"Vol L",  value:"40%",  sub:"-23.88 dB", color:"amber", meter:0.4 },
+      { id:"volR", label:"Vol R",  value:"40%",  sub:"-23.88 dB", color:"amber", meter:0.4 },
+      { id:"mute", label:"Mute",   value:"No",   sub:"unmuted",   color:"teal" }
+    ],
+    engine: [
+      { id:"eng",   label:"Engine",  value:"PipeWire",     sub:"audio server", color:"amber" },
+      { id:"depth", label:"Depth",   value:"32-bit",       sub:"s32le native",  color:"amber" },
+      { id:"chans", label:"Channels",value:"2",            sub:"stereo",        color:"blue" }
+    ],
+    calibrate: [
+      { id:"hrtf_st", label:"HRTF",    value:"Ready",     sub:"calibrated",     color:"cyan" },
+      { id:"itd",     label:"ITD",     value:"0.63 ms",   sub:"interaural delay",color:"cyan" },
+      { id:"azim",    label:"Azimuth", value:"0°",    sub:"frontal",        color:"blue" },
+      { id:"room",    label:"Room",    value:"Medium",     sub:"RT60 0.4s",      color:"green" }
+    ],
+    spatial: [
+      { id:"layout",  label:"Layout",   value:"7.1",       sub:"surround",      color:"cyan" },
+      { id:"spkrs",   label:"Speakers", value:"8",          sub:"mapped",        color:"cyan" },
+      { id:"dist",    label:"Distance", value:"2.4 m",      sub:"avg listener",  color:"blue" }
+    ],
+    uptime: [
+      { id:"up",       label:"Uptime",   value:"14d 7h",    sub:"kernel 6.18",   color:"lavender" },
+      { id:"cpu_temp", label:"CPU",      value:"42°C", sub:"max 100°C",color:"lavender", meter:0.42 }
+    ],
+    memory: [
+      { id:"ram",    label:"RAM",      value:"6.2 Gi",      sub:"of 16 Gi",      color:"lavender", meter:0.39 },
+      { id:"avail",  label:"Available",value:"9.2 Gi",      sub:"free 4.1 Gi",   color:"teal" }
+    ],
+    disk: [
+      { id:"root",   label:"/",        value:"32%",          sub:"142G / 468G",   color:"lavender", meter:0.32 },
+      { id:"home",   label:"/home",    value:"10%",          sub:"89G / 931G",    color:"lavender", meter:0.10 }
+    ],
+    top: [
+      { id:"p1",     label:"#1 Proc",  value:"kodi",         sub:"8.4% mem",      color:"lavender" },
+      { id:"p2",     label:"#2 Proc",  value:"pipewire",     sub:"3.2% mem",      color:"amber" },
+      { id:"p3",     label:"#3 Proc",  value:"Xwayland",     sub:"1.8% mem",      color:"lavender" }
+    ]
+  };
+
+  var LOG_LINES = {
+    detect:    ["▸ pactl info → PipeWire 1.0, hdmi-stereo, s32le 2ch 48kHz RUNNING"],
+    volume:    ["▸ Volume L/R 40% (-23.88 dB), mute: no"],
+    engine:    ["▸ Engine: PipeWire, 48000 Hz, 32-bit, 2ch, 40%"],
+    calibrate: ["▸ HRTF calibration: ITD 0.63ms, azimuth 0°, room RT60 0.4s"],
+    spatial:   ["▸ Spatial map: 7.1 surround, 8 speakers mapped, avg 2.4m"],
+    play:      ["▶ Playing — audio routed through HRTF pipeline"],
+    stop:      ["■ Stopped playback"],
+    uptime:    ["▸ Up 14 days 7:23, kernel 6.18.44-fc-v37, CPU 42°C"],
+    memory:    ["▸ RAM 6.2Gi used / 16Gi total, 9.2Gi available"],
+    disk:      ["▸ / 32% (142G/468G), /home 10% (89G/931G)"],
+    top:       ["▸ Top: kodi 8.4%, pipewire 3.2%, Xwayland 1.8%"]
+  };
+
+  // ── DOM helpers (safe: no innerHTML, no setAttribute, no cssText) ──
+  var BOOL_WL = {selected:1,disabled:1,hidden:1,autoplay:1,muted:1};
+  var PROP_MAP = {id:"id",type:"type",placeholder:"placeholder",value:"value",width:"width",height:"height",title:"title",autocomplete:"autocomplete",autocapitalize:"autocapitalize",spellcheck:"spellcheck",name:"name",role:"role",tabindex:"tabIndex",playsinline:"playsInline"};
+
+  function el(tag, attrs, children) {
+    var node = document.createElement(tag);
+    if (attrs) {
+      var keys = Object.keys(attrs);
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i], v = attrs[k];
+        if (k === "className") node.className = v;
+        else if (k === "textContent") node.textContent = v;
+        else if (k === "style") { var sk = Object.keys(v); for (var j = 0; j < sk.length; j++) node.style[sk[j]] = v[sk[j]]; }
+        else if (k.charAt(0) === "o" && k.charAt(1) === "n") node.addEventListener(k.slice(2), v);
+        else if (BOOL_WL[k]) node[k] = !!v;
+        else if (PROP_MAP[k]) node[PROP_MAP[k]] = v;
+      }
+    }
+    if (children) {
+      var arr = Array.isArray(children) ? children : [children];
+      for (var ci = 0; ci < arr.length; ci++) {
+        if (arr[ci] != null) node.appendChild(typeof arr[ci] === "string" ? document.createTextNode(arr[ci]) : arr[ci]);
+      }
+    }
+    return node;
+  }
+  function clearEl(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+
+  var layoutEl = document.getElementById("layout");
+  var hostBarEl = document.getElementById("hostBar");
+  var modalEl = document.getElementById("modal");
+  var gearBtn = document.getElementById("gearBtn");
+  var abBtnEl = document.getElementById("abBtn");
+  var micBtnEl = document.getElementById("micBtn");
+  var vidBtnEl = document.getElementById("vidBtn");
+
+  // ── Sonar engine ──
+  var BANDS = 64;
+  var sonarAngle = -Math.PI / 2;
+  var SONAR_SPEED = 0.03;
+  var sonarDataA = new Float32Array(BANDS);
+  var sonarDataB = new Float32Array(BANDS);
+  var _noiseSeed = 1;
+  function noise01() { _noiseSeed = (_noiseSeed * 16807 + 0) % 2147483647; return (_noiseSeed & 0x7fffffff) / 2147483647; }
+  var HRTF_PROFILES = ["default", "small_room", "medium_room", "large_room", "anechoic", "outdoor"];
+
+  function genSonarFrame(data, profile, isActive) {
+    var peak, center, spread;
+    switch (profile) {
+      case "small_room":  peak = 0.7;  center = 0.35; spread = 3.5; break;
+      case "large_room":  peak = 0.65; center = 0.12; spread = 2.8; break;
+      case "anechoic":    peak = 0.55; center = 0.25; spread = 5.0; break;
+      case "outdoor":     peak = 0.45; center = 0.18; spread = 2.0; break;
+      default:            peak = 0.5;  center = 0.2;  spread = 4.0; break;
+    }
+    for (var i = 0; i < BANDS; i++) {
+      var norm = i / BANDS;
+      var env = Math.exp(-Math.pow((norm - center) * spread, 2)) * peak;
+      env += Math.exp(-Math.pow((norm - 0.5) * 3, 2)) * peak * 0.25;
+      if (isActive) {
+        data[i] = env * (0.5 + 0.5 * noise01());
+      } else {
+        data[i] *= 0.92;
+      }
+    }
+  }
+
+  function drawSonar(canvas, data, hexColor, angle) {
+    var ctx = canvas.getContext("2d");
+    var w = canvas.width, h = canvas.height;
+    var cx = w / 2, cy = h / 2;
+    var radius = Math.min(cx, cy) * 0.88;
+
+    var cr = parseInt(hexColor.slice(1, 3), 16);
+    var cg = parseInt(hexColor.slice(3, 5), 16);
+    var cb = parseInt(hexColor.slice(5, 7), 16);
+
+    ctx.fillStyle = "rgba(10,10,18,0.06)";
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.strokeStyle = "rgba(80,80,128,0.12)";
+    ctx.lineWidth = 0.5;
+    for (var ring = 1; ring <= 4; ring++) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius * ring / 4, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.moveTo(cx - radius, cy); ctx.lineTo(cx + radius, cy);
+    ctx.moveTo(cx, cy - radius); ctx.lineTo(cx, cy + radius);
+    ctx.stroke();
+
+    for (var di = 0; di < BANDS; di++) {
+      var val = data[di];
+      if (val < 0.03) continue;
+      var dist = ((di + 1) / BANDS) * radius;
+      var jitter = (noise01() - 0.5) * 0.04;
+      var px = cx + Math.cos(angle + jitter) * dist;
+      var py = cy + Math.sin(angle + jitter) * dist;
+      var dotR = 1 + val * 2.5;
+      ctx.fillStyle = "rgba(" + cr + "," + cg + "," + cb + "," + (val * 0.85).toFixed(2) + ")";
+      ctx.beginPath();
+      ctx.arc(px, py, dotR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    var sx = cx + Math.cos(angle) * radius;
+    var sy = cy + Math.sin(angle) * radius;
+    var grad = ctx.createLinearGradient(cx, cy, sx, sy);
+    grad.addColorStop(0, "rgba(" + cr + "," + cg + "," + cb + ",0.05)");
+    grad.addColorStop(0.4, "rgba(" + cr + "," + cg + "," + cb + ",0.3)");
+    grad.addColorStop(1, "rgba(" + cr + "," + cg + "," + cb + ",0.7)");
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy); ctx.lineTo(sx, sy);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, radius, angle - 0.3, angle, false);
+    ctx.closePath();
+    var fanGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+    fanGrad.addColorStop(0, "rgba(" + cr + "," + cg + "," + cb + ",0)");
+    fanGrad.addColorStop(1, "rgba(" + cr + "," + cg + "," + cb + ",0.04)");
+    ctx.fillStyle = fanGrad;
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(" + cr + "," + cg + "," + cb + ",0.5)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function sonarTick() {
+    var isActive = !!playingSet[activeIdx] || micActive;
+
+    if (micActive && analyserNode) {
+      var freqData = new Uint8Array(analyserNode.frequencyBinCount);
+      analyserNode.getByteFrequencyData(freqData);
+      var step = Math.max(1, Math.floor(freqData.length / BANDS));
+      for (var i = 0; i < BANDS; i++) {
+        sonarDataA[i] = freqData[Math.min(i * step, freqData.length - 1)] / 255;
+      }
+    } else {
+      genSonarFrame(sonarDataA, prefs.hrtfProfile, isActive);
+    }
+
+    var canvasA = document.getElementById("sonarA");
+    if (canvasA) drawSonar(canvasA, sonarDataA, "#44ccaa", sonarAngle);
+
+    if (abMode) {
+      genSonarFrame(sonarDataB, prefs.hrtfProfileB, isActive);
+      var canvasB = document.getElementById("sonarB");
+      if (canvasB) drawSonar(canvasB, sonarDataB, "#f0a830", sonarAngle);
+    }
+
+    sonarAngle += SONAR_SPEED;
+    if (sonarAngle > Math.PI * 2) sonarAngle -= Math.PI * 2;
+
+    if (micActive && analyserNode) updateMicLevel();
+
+    animId = requestAnimationFrame(sonarTick);
+  }
+
+  function startSonar() { if (!animId) animId = requestAnimationFrame(sonarTick); }
+  function stopSonar() { if (animId) { cancelAnimationFrame(animId); animId = null; } }
+
+  function sizeCanvas(canvasId) {
+    var c = document.getElementById(canvasId);
+    if (!c || !c.parentElement) return;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var rect = c.parentElement.getBoundingClientRect();
+    c.width = Math.round(rect.width * dpr);
+    c.height = Math.round(c.offsetHeight * dpr);
+    var ctx = c.getContext("2d");
+    ctx.fillStyle = "#0a0a12";
+    ctx.fillRect(0, 0, c.width, c.height);
+  }
+
+  // ── Mic capture ──
+  function toggleMic() { micActive ? stopMic() : startMic(); }
+
+  function startMic() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      addLog("⚠ Microphone not available", "red");
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      micStream = stream;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      var source = audioCtx.createMediaStreamSource(stream);
+      analyserNode = audioCtx.createAnalyser();
+      analyserNode.fftSize = 256;
+      source.connect(analyserNode);
+      micActive = true;
+      addLog("● Microphone active — feeding adaptive HRTF profile", "green");
+      render();
+    }).catch(function (err) {
+      addLog("⚠ Mic access denied: " + err.message, "red");
+    });
+  }
+
+  function stopMic() {
+    if (micStream) { micStream.getTracks().forEach(function (t) { t.stop(); }); micStream = null; }
+    if (audioCtx) { audioCtx.close(); audioCtx = null; }
+    analyserNode = null;
+    micActive = false;
+    addLog("● Microphone stopped", "green");
+    render();
+  }
+
+  function updateMicLevel() {
+    if (!analyserNode) return;
+    var data = new Uint8Array(analyserNode.frequencyBinCount);
+    analyserNode.getByteFrequencyData(data);
+    var sum = 0;
+    for (var i = 0; i < data.length; i++) sum += data[i];
+    var level = sum / (data.length * 255);
+    var meter = document.getElementById("micMeter");
+    if (meter) meter.style.width = (level * 100) + "%";
+    var db = document.getElementById("micDb");
+    if (db) db.textContent = (level > 0 ? (20 * Math.log10(level)).toFixed(1) : "-∞") + " dB";
+  }
+
+  // ── Video capture ──
+  function toggleVideo() { vidActive ? stopVideo() : startVideo(); }
+
+  function startVideo() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      addLog("⚠ Camera not available", "red");
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ video: true }).then(function (stream) {
+      vidStream = stream;
+      vidActive = true;
+      addLog("◉ Video feed active", "cyan");
+      render();
+      var videoEl = document.getElementById("videoFeed");
+      if (videoEl) videoEl.srcObject = stream;
+    }).catch(function (err) {
+      addLog("⚠ Camera access denied: " + err.message, "red");
+    });
+  }
+
+  function stopVideo() {
+    if (vidStream) { vidStream.getTracks().forEach(function (t) { t.stop(); }); vidStream = null; }
+    vidActive = false;
+    addLog("◉ Video feed stopped", "cyan");
+    render();
+  }
+
+  // ── Helpers ──
+  function disconnect() {
+    delete connectedSet[activeIdx]; delete activityLog[activeIdx];
+    delete tileState[activeIdx]; delete playingSet[activeIdx];
+    if (micActive) stopMic();
+    if (vidActive) stopVideo();
+    render();
+  }
+
+  function addLog(text, color) {
+    if (!activityLog[activeIdx]) activityLog[activeIdx] = [];
+    activityLog[activeIdx].push({ text: text, color: color });
+  }
+
+  var COLOR_VAR = { amber:"var(--amber)", teal:"var(--teal)", lavender:"var(--lavender)", blue:"var(--blue)", red:"var(--red)", cyan:"var(--cyan)", green:"var(--green)" };
+
+  // ── Render ──
+  function render() {
+    var h = hosts[activeIdx];
+    var isConn = !!connectedSet[activeIdx];
+    document.getElementById("sPill").className = "status-pill " + (isConn ? "on" : "off");
+    document.getElementById("sText").textContent = isConn ? h.host : "offline";
+    gearBtn.className = "hdr-btn" + (currentView === VIEW_SETTINGS ? " active" : "");
+    abBtnEl.className = "hdr-btn" + (abMode ? " active" : "");
+    abBtnEl.hidden = !isConn || currentView === VIEW_SETTINGS;
+    micBtnEl.hidden = !isConn || currentView === VIEW_SETTINGS;
+    vidBtnEl.hidden = !isConn || currentView === VIEW_SETTINGS;
+    micBtnEl.className = "hdr-btn" + (micActive ? " active-green" : "");
+    vidBtnEl.className = "hdr-btn" + (vidActive ? " active-cyan" : "");
+
+    if (currentView === VIEW_SETTINGS) {
+      hostBarEl.hidden = true; stopSonar();
+      renderSettings();
+    } else {
+      hostBarEl.hidden = false;
+      renderHostBar();
+      if (isConn) { renderConnected(h); startSonar(); }
+      else { stopSonar(); renderDisconnected(h); }
+    }
+  }
+
+  function renderHostBar() {
+    var frag = document.createDocumentFragment();
+    hosts.forEach(function (h, i) {
+      var cls = "host-tab" + (i === activeIdx ? " active" : "") + (connectedSet[i] ? " connected" : "");
+      frag.appendChild(el("button", { className: cls, textContent: h.label || (h.user + "@" + h.host), onclick: function () { activeIdx = i; render(); } }));
+    });
+    frag.appendChild(el("button", { className: "add-btn", textContent: "+", title: "Add host", onclick: function () { openHostModal(); } }));
+    clearEl(hostBarEl);
+    hostBarEl.appendChild(frag);
+  }
+
+  function renderDisconnected(h) {
+    var frag = document.createDocumentFragment();
+    frag.appendChild(el("div", { className: "connect-card", onclick: function () { connectedSet[activeIdx] = true; render(); } }, [
+      el("span", { style: { fontSize: "22px" } }, "⚡"),
+      el("div", null, [
+        el("div", { style: { fontSize: "14px", fontWeight: "700", color: "var(--amber)" } }, "Connect to " + (h.label || h.host)),
+        el("div", { style: { fontSize: "11px", color: "var(--text-dim)" } }, h.user + "@" + h.host + " — press Enter or tap")
+      ])
+    ]));
+    if (!tipDismissed) {
+      var tipEl;
+      tipEl = el("div", { className: "tip" }, [
+        el("span", null, "💡"),
+        el("span", null, [
+          el("strong", { style: { color: "var(--text-bright)", fontWeight: "600" } }, "Quick start: "),
+          document.createTextNode("Connect → Detect → Calibrate → Play. Number keys 1–0 with any keyboard for hands-free control. M for mic, V for video.")
+        ]),
+        el("button", { className: "stop-badge", style: { marginLeft: "auto", background: "none", border: "none", color: "var(--text-dim)", fontSize: "16px", padding: "0", lineHeight: "1" }, onclick: function () { tipDismissed = true; saveStore("pc_tip_off", true); tipEl.hidden = true; } }, "×")
+      ]);
+      frag.appendChild(tipEl);
+    }
+    clearEl(layoutEl);
+    layoutEl.appendChild(frag);
+  }
+
+  function renderConnected(h) {
+    var frag = document.createDocumentFragment();
+
+    var sidebar = el("div", { className: "sidebar" });
+    sidebar.appendChild(buildCmdPanel("Audio", "amber", CMDS.filter(function (c) { return c.group === "audio"; })));
+    sidebar.appendChild(buildCmdPanel("HRTF", "cyan", CMDS.filter(function (c) { return c.group === "hrtf"; })));
+    sidebar.appendChild(buildCmdPanel("Playback", "teal", CMDS.filter(function (c) { return c.group === "play"; })));
+    sidebar.appendChild(buildCmdPanel("System", "lavender", CMDS.filter(function (c) { return c.group === "system"; })));
+
+    var discPanel = el("div", { className: "panel red", style: { padding: "8px" } });
+    discPanel.appendChild(el("button", { className: "cmd-btn red", style: { width: "100%" }, onclick: disconnect }, [
+      el("span", { className: "cmd-key" }, "Esc"),
+      el("span", { className: "cmd-name" }, "Disconnect")
+    ]));
+    sidebar.appendChild(discPanel);
+    frag.appendChild(sidebar);
+
+    var main = el("div", { className: "main" });
+
+    if (abMode) {
+      main.appendChild(buildABSonar());
+    } else {
+      main.appendChild(buildSonarPanel());
+    }
+
+    if (vidActive) main.appendChild(buildVideoPanel());
+    if (micActive) main.appendChild(buildMicPanel());
+
+    var tiles = tileState[activeIdx];
+    if (tiles && tiles.length > 0) main.appendChild(buildTilePanel(tiles));
+
+    main.appendChild(buildLogPanel());
+    frag.appendChild(main);
+
+    clearEl(layoutEl);
+    layoutEl.appendChild(frag);
+
+    sizeCanvas("sonarA");
+    if (abMode) sizeCanvas("sonarB");
+
+    if (vidActive && vidStream) {
+      var videoEl = document.getElementById("videoFeed");
+      if (videoEl) videoEl.srcObject = vidStream;
+    }
+  }
+
+  function buildSonarPanel() {
+    var panel = el("div", { className: "panel teal" });
+    var badge = (playingSet[activeIdx] || micActive) ? "LIVE" : "IDLE";
+    panel.appendChild(el("div", { className: "panel-head" }, [
+      document.createTextNode("Sonar"),
+      el("span", { className: "badge" }, badge)
+    ]));
+    var wrap = el("div", { className: "sonar-wrap" });
+    wrap.appendChild(el("canvas", { id: "sonarA", width: "600", height: "300" }));
+    wrap.appendChild(el("div", { className: "sonar-overlay" }, [
+      el("span", null, prefs.hrtfProfile.replace(/_/g, " ")),
+      el("span", null, "HRTF"),
+      el("span", null, (prefs.sampleRate / 1000) + " kHz")
+    ]));
+    panel.appendChild(wrap);
+    return panel;
+  }
+
+  function buildABSonar() {
+    var panel = el("div", { className: "panel teal" });
+    var badge = (playingSet[activeIdx] || micActive) ? "LIVE" : "IDLE";
+    panel.appendChild(el("div", { className: "panel-head" }, [
+      document.createTextNode("A/B Compare"),
+      el("span", { className: "badge" }, badge)
+    ]));
+    var row = el("div", { className: "ab-row", style: { padding: "0 8px 8px" } });
+
+    var colA = el("div", { className: "ab-col" });
+    colA.appendChild(el("div", { className: "ab-label a" }, [
+      document.createTextNode("A "),
+      buildProfileSelect(prefs.hrtfProfile, function (v) { prefs.hrtfProfile = v; saveStore("pc_prefs", prefs); })
+    ]));
+    var wrapA = el("div", { className: "sonar-wrap" });
+    wrapA.appendChild(el("canvas", { id: "sonarA", width: "400", height: "300" }));
+    colA.appendChild(wrapA);
+    row.appendChild(colA);
+
+    var colB = el("div", { className: "ab-col" });
+    colB.appendChild(el("div", { className: "ab-label b" }, [
+      document.createTextNode("B "),
+      buildProfileSelect(prefs.hrtfProfileB, function (v) { prefs.hrtfProfileB = v; saveStore("pc_prefs", prefs); })
+    ]));
+    var wrapB = el("div", { className: "sonar-wrap" });
+    wrapB.appendChild(el("canvas", { id: "sonarB", width: "400", height: "300" }));
+    colB.appendChild(wrapB);
+    row.appendChild(colB);
+
+    panel.appendChild(row);
+    return panel;
+  }
+
+  function buildProfileSelect(current, onChange) {
+    var sel = el("select", { className: "ab-select", onchange: function () { onChange(sel.value); } });
+    HRTF_PROFILES.forEach(function (p) {
+      var opt = el("option", { value: p, textContent: p.replace(/_/g, " ") });
+      if (p === current) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    return sel;
+  }
+
+  function buildVideoPanel() {
+    var panel = el("div", { className: "panel cyan" });
+    panel.appendChild(el("div", { className: "panel-head" }, [
+      document.createTextNode("Video Feed"),
+      el("button", { className: "stop-badge", onclick: stopVideo }, "Stop")
+    ]));
+    var wrap = el("div", { className: "video-wrap" });
+    wrap.appendChild(el("video", { id: "videoFeed", autoplay: true, muted: true, playsinline: "true" }));
+    panel.appendChild(wrap);
+    return panel;
+  }
+
+  function buildMicPanel() {
+    var panel = el("div", { className: "panel green" });
+    panel.appendChild(el("div", { className: "panel-head" }, [
+      document.createTextNode("Microphone"),
+      el("button", { className: "stop-badge", onclick: stopMic }, "Stop")
+    ]));
+    var bar = el("div", { className: "mic-bar" });
+    var level = el("div", { className: "mic-level" });
+    level.appendChild(el("div", { className: "mic-level-fill", id: "micMeter" }));
+    bar.appendChild(level);
+    bar.appendChild(el("span", { className: "mic-db", id: "micDb" }, "-∞ dB"));
+    panel.appendChild(bar);
+    return panel;
+  }
+
+  function buildTilePanel(tiles) {
+    var panel = el("div", { className: "panel blue" });
+    panel.appendChild(el("div", { className: "panel-head" }, "Status"));
+    var grid = el("div", { className: "tile-grid" });
+    tiles.forEach(function (t) {
+      var tile = el("div", { className: "tile " + t.color }, [
+        el("div", { className: "tile-label" }, t.label),
+        el("div", { className: "tile-value" }, t.value),
+        el("div", { className: "tile-sub" }, t.sub)
+      ]);
+      if (t.meter !== undefined) {
+        var meterColor = COLOR_VAR[t.color] || "var(--blue)";
+        var meter = el("div", { className: "meter" });
+        meter.appendChild(el("div", { className: "meter-fill", style: { width: (t.meter * 100) + "%", background: meterColor } }));
+        tile.appendChild(meter);
+      }
+      grid.appendChild(tile);
+    });
+    panel.appendChild(grid);
+    return panel;
+  }
+
+  function buildLogPanel() {
+    var panel = el("div", { className: "panel blue" });
+    panel.appendChild(el("div", { className: "panel-head" }, [
+      document.createTextNode("Activity"),
+      el("button", { style: { background: "none", border: "none", fontFamily: "inherit", fontSize: "10px", color: "var(--text-dim)", cursor: "pointer", padding: "2px 6px" }, onclick: function () {
+        activityLog[activeIdx] = []; var lb = document.getElementById("logBody"); if (lb) clearEl(lb);
+      } }, "Clear")
+    ]));
+    var logBody = el("div", { className: "log-body", id: "logBody" });
+    var lines = activityLog[activeIdx];
+    if (lines) {
+      lines.forEach(function (l) {
+        var div = document.createElement("div");
+        var colorVal = COLOR_VAR[l.color];
+        if (colorVal) div.style.color = colorVal;
+        div.textContent = l.text;
+        logBody.appendChild(div);
+      });
+    }
+    panel.appendChild(logBody);
+    return panel;
+  }
+
+  function buildCmdPanel(title, color, cmds) {
+    var panel = el("div", { className: "panel " + color });
+    panel.appendChild(el("div", { className: "panel-head", textContent: title }));
+    var grid = el("div", { className: "cmd-grid panel-body" });
+    cmds.forEach(function (c) {
+      grid.appendChild(el("button", { className: "cmd-btn " + c.color, onclick: function () { runCmd(c.id); } }, [
+        el("span", { className: "cmd-key" }, c.key),
+        el("span", { className: "cmd-name" }, c.name)
+      ]));
+    });
+    panel.appendChild(grid);
+    return panel;
+  }
+
+  // ── Run command ──
+  function runCmd(id) {
+    var cmd = CMDS.find(function (c) { return c.id === id; });
+    if (!cmd) return;
+
+    if (id === "play") playingSet[activeIdx] = true;
+    if (id === "stop") delete playingSet[activeIdx];
+
+    var newTiles = TILE_DATA[id];
+    if (newTiles) {
+      if (!tileState[activeIdx]) tileState[activeIdx] = [];
+      newTiles.forEach(function (nt) {
+        var existing = tileState[activeIdx].findIndex(function (t) { return t.id === nt.id; });
+        if (existing >= 0) tileState[activeIdx][existing] = nt;
+        else tileState[activeIdx].push(nt);
+      });
+    }
+
+    var logLines = LOG_LINES[id];
+    if (logLines) {
+      if (!activityLog[activeIdx]) activityLog[activeIdx] = [];
+      logLines.forEach(function (l) { activityLog[activeIdx].push({ text: l, color: cmd.color }); });
+    }
+
+    render();
+    var lb = document.getElementById("logBody");
+    if (lb) lb.scrollTop = lb.scrollHeight;
+  }
+
+  // ── Keyboard ──
+  var KEY_MAP = { "1":"detect", "2":"volume", "3":"engine", "4":"calibrate", "5":"spatial", "6":"play", "7":"stop", "8":"uptime", "9":"memory", "0":"disk" };
+
+  document.addEventListener("keydown", function (e) {
+    var tag = e.target.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    if (!modalEl.hidden) { if (e.key === "Escape") { modalEl.hidden = true; e.preventDefault(); } return; }
+    if (e.key === "s" || e.key === "S") { currentView = currentView === VIEW_SETTINGS ? VIEW_CONSOLE : VIEW_SETTINGS; render(); e.preventDefault(); return; }
+    if (currentView === VIEW_SETTINGS) return;
+    var isConn = !!connectedSet[activeIdx];
+    if (e.key === "Enter" && !isConn) { connectedSet[activeIdx] = true; render(); e.preventDefault(); return; }
+    if (e.key === "Escape" && isConn) { disconnect(); e.preventDefault(); return; }
+    if (!isConn) return;
+    if (e.key === "a" || e.key === "A") { abMode = !abMode; render(); e.preventDefault(); return; }
+    if (e.key === "m" || e.key === "M") { toggleMic(); e.preventDefault(); return; }
+    if (e.key === "v" || e.key === "V") { toggleVideo(); e.preventDefault(); return; }
+    if (e.key === "t" || e.key === "T") { runCmd("top"); e.preventDefault(); return; }
+    if (KEY_MAP[e.key]) { runCmd(KEY_MAP[e.key]); e.preventDefault(); return; }
+    if (e.key === " ") { runCmd(playingSet[activeIdx] ? "stop" : "play"); e.preventDefault(); }
+  });
+
+  gearBtn.addEventListener("click", function () { currentView = currentView === VIEW_SETTINGS ? VIEW_CONSOLE : VIEW_SETTINGS; render(); });
+  abBtnEl.addEventListener("click", function () { abMode = !abMode; render(); });
+  micBtnEl.addEventListener("click", toggleMic);
+  vidBtnEl.addEventListener("click", toggleVideo);
+
+  // ── Settings ──
+  function renderSettings() {
+    var frag = document.createDocumentFragment();
+    frag.appendChild(buildRemotesSection());
+    frag.appendChild(buildAudioSection());
+    frag.appendChild(buildHRTFSection());
+    frag.appendChild(buildDisplaySection());
+    frag.appendChild(buildShortcutsSection());
+    clearEl(layoutEl);
+    layoutEl.appendChild(frag);
+  }
+
+  function buildRemotesSection() {
+    var sec = el("div", { className: "panel amber" });
+    sec.appendChild(el("div", { className: "panel-head" }, "Remotes"));
+    var body = el("div", { className: "ss-body" });
+    hosts.forEach(function (h, i) {
+      body.appendChild(el("div", { className: "host-row" }, [
+        el("div", { className: "host-info" }, [
+          el("div", { className: "host-label" }, h.label || h.host),
+          el("div", { className: "host-addr" }, h.user + "@" + h.host)
+        ]),
+        el("div", { style: { display: "flex", gap: "4px", flexShrink: "0" } }, [
+          el("button", { className: "icon-btn", title: "Edit", onclick: function () { openHostModal(i); } }, "✎"),
+          el("button", { className: "icon-btn danger", title: "Remove", onclick: function () {
+            if (hosts.length <= 1) return;
+            openConfirmModal("Remove " + (h.label || h.host) + "?", "You can re-add it later.", function () {
+              hosts.splice(i, 1); saveStore("pc_hosts", hosts);
+              if (activeIdx >= hosts.length) activeIdx = hosts.length - 1;
+              delete connectedSet[i]; delete activityLog[i]; render();
+            });
+          } }, "✕")
+        ])
+      ]));
+    });
+    body.appendChild(el("button", { className: "add-host-btn", onclick: function () { openHostModal(); } }, "+ Add Remote"));
+    sec.appendChild(body);
+    return sec;
+  }
+
+  function buildAudioSection() {
+    var sec = el("div", { className: "panel teal" });
+    sec.appendChild(el("div", { className: "panel-head" }, "Audio Output"));
+    var body = el("div", { className: "ss-body" });
+    body.appendChild(settingRow("Bit Depth", "Match your DAC output", makeSegControl(["16", "32"], String(prefs.bitDepth), function (v) { prefs.bitDepth = parseInt(v, 10); saveStore("pc_prefs", prefs); })));
+    body.appendChild(settingRow("Sample Rate", "Match your audio sink", makeSegControl(["44100", "48000", "96000"], String(prefs.sampleRate), function (v) { prefs.sampleRate = parseInt(v, 10); saveStore("pc_prefs", prefs); })));
+    sec.appendChild(body);
+    return sec;
+  }
+
+  function buildHRTFSection() {
+    var sec = el("div", { className: "panel cyan" });
+    sec.appendChild(el("div", { className: "panel-head" }, "HRTF / Spatial"));
+    var body = el("div", { className: "ss-body" });
+    body.appendChild(settingRow("Default Profile", "Head-related transfer function", makeSegControl(["default", "medium_room", "anechoic"], prefs.hrtfProfile, function (v) { prefs.hrtfProfile = v; saveStore("pc_prefs", prefs); })));
+    sec.appendChild(body);
+    return sec;
+  }
+
+  function buildDisplaySection() {
+    var sec = el("div", { className: "panel lavender" });
+    sec.appendChild(el("div", { className: "panel-head" }, "Display"));
+    var body = el("div", { className: "ss-body" });
+    body.appendChild(settingRow("Theme", "System follows OS preference", makeSegControl(["system", "dark", "light"], prefs.theme, function (v) { prefs.theme = v; saveStore("pc_prefs", prefs); applyTheme(v); render(); })));
+    sec.appendChild(body);
+    return sec;
+  }
+
+  function buildShortcutsSection() {
+    var sec = el("div", { className: "panel blue" });
+    sec.appendChild(el("div", { className: "panel-head" }, "Keyboard Shortcuts"));
+    var body = el("div", { className: "ss-body" });
+    var grid = el("div", { className: "shortcut-grid" });
+    [["1-7", "Run commands"], ["8-0", "System checks"], ["T", "Top processes"], ["Space", "Play / pause"], ["M", "Toggle mic"], ["V", "Toggle video"], ["A", "A/B compare"], ["Enter", "Connect"], ["Esc", "Disconnect"], ["S", "Settings"]].forEach(function (p) {
+      grid.appendChild(el("kbd", null, p[0]));
+      grid.appendChild(el("span", { style: { color: "var(--text)" } }, p[1]));
+    });
+    body.appendChild(grid);
+    body.appendChild(el("div", { style: { marginTop: "10px", fontSize: "11px", color: "var(--text-dim)", lineHeight: "1.5" } },
+      "Works with any USB, Bluetooth, or wireless keyboard. Pair your remote via your HTPC’s Bluetooth settings."));
+    sec.appendChild(body);
+    return sec;
+  }
+
+  function settingRow(label, hint, control) {
+    return el("div", { className: "setting-row" }, [
+      el("div", null, [el("div", { className: "setting-label" }, label), el("div", { className: "setting-hint" }, hint)]),
+      control
+    ]);
+  }
+
+  function makeSegControl(opts, active, onChange) {
+    var wrap = el("div", { className: "seg-control" });
+    opts.forEach(function (o) {
+      wrap.appendChild(el("button", { className: "seg-btn" + (o === active ? " active" : ""), textContent: o, onclick: function () {
+        onChange(o); wrap.querySelectorAll(".seg-btn").forEach(function (b) { b.className = "seg-btn" + (b.textContent === o ? " active" : ""); });
+      } }));
+    });
+    return wrap;
+  }
+
+  // ── Modals ──
+  function openHostModal(editIdx) {
+    var isEdit = editIdx !== undefined;
+    var existing = isEdit ? hosts[editIdx] : null;
+    clearEl(modalEl);
+    var box = el("div", { className: "modal-box" });
+    box.appendChild(el("h3", { className: "modal-title" }, isEdit ? "Edit Remote" : "Add Remote"));
+    box.appendChild(el("p", { className: "modal-sub" }, "SSH connection for your HTPC or network device."));
+    var ui = el("input", { type: "text", placeholder: "htpc", autocomplete: "off", autocapitalize: "off", spellcheck: "false" });
+    var hi = el("input", { type: "text", placeholder: "192.168.1.100", autocomplete: "off", autocapitalize: "off", spellcheck: "false" });
+    var li = el("input", { type: "text", placeholder: "Living room HTPC", autocomplete: "off", spellcheck: "false" });
+    if (existing) { ui.value = existing.user; hi.value = existing.host; li.value = existing.label; }
+    box.appendChild(el("div", { className: "mf" }, [el("label", null, "User"), ui]));
+    box.appendChild(el("div", { className: "mf" }, [el("label", null, "Hostname / IP"), hi]));
+    box.appendChild(el("div", { className: "mf" }, [el("label", null, "Label"), li]));
+    var actions = el("div", { className: "m-actions" });
+    actions.appendChild(el("button", { className: "m-cancel", onclick: function () { modalEl.hidden = true; } }, "Cancel"));
+    actions.appendChild(el("button", { className: "m-ok", onclick: function () {
+      var u = ui.value.trim() || "user", hostname = hi.value.trim();
+      if (!hostname) return;
+      if (isEdit) { hosts[editIdx] = { user: u, host: hostname, label: li.value.trim() || hostname }; }
+      else { hosts.push({ user: u, host: hostname, label: li.value.trim() || hostname }); activeIdx = hosts.length - 1; currentView = VIEW_CONSOLE; }
+      saveStore("pc_hosts", hosts); modalEl.hidden = true; render();
+    } }, isEdit ? "Save" : "Add"));
+    box.appendChild(actions);
+    modalEl.appendChild(box); modalEl.hidden = false;
+    setTimeout(function () { ui.focus(); }, 80);
+  }
+
+  function openConfirmModal(title, msg, onOk) {
+    clearEl(modalEl);
+    var box = el("div", { className: "modal-box" });
+    box.appendChild(el("h3", { className: "modal-title" }, title));
+    box.appendChild(el("p", { className: "modal-sub" }, msg));
+    var actions = el("div", { className: "m-actions" });
+    actions.appendChild(el("button", { className: "m-cancel", onclick: function () { modalEl.hidden = true; } }, "Cancel"));
+    actions.appendChild(el("button", { className: "m-delete", onclick: function () { modalEl.hidden = true; onOk(); } }, "Remove"));
+    box.appendChild(actions);
+    modalEl.appendChild(box); modalEl.hidden = false;
+  }
+
+  modalEl.addEventListener("click", function (e) { if (e.target === modalEl) modalEl.hidden = true; });
+
+  // ── Clock ──
+  function tick() { var c = document.getElementById("clock"); if (c) c.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+  tick(); setInterval(tick, 30000);
+
+  // ── Boot ──
+  init(); applyTheme(prefs.theme); render();
+})();
+</script>

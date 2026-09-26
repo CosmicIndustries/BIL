@@ -41,6 +41,7 @@ from .protocol import (
     lucia_hypnagogic,
     vibroacoustic_relaxation,
 )
+from .audio_output import AudioOutputInfo, detect_audio_output
 from .session import SessionConfig, render_session, collect_safety_warnings
 from .safety import EntrainmentSafetyError
 
@@ -56,6 +57,8 @@ __all__ = [
     "focus21_extended_bridge",
     "lucia_hypnagogic",
     "vibroacoustic_relaxation",
+    "AudioOutputInfo",
+    "detect_audio_output",
     "SessionConfig",
     "render_session",
     "collect_safety_warnings",
