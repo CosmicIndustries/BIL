@@ -123,6 +123,8 @@ phase1() {
     mount --bind /dev/pts /mnt/dev/pts
     mount -t proc proc /mnt/proc
     mount -t sysfs sys /mnt/sys
+    mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars 2>/dev/null || \
+        warn "Could not mount efivars — EFI boot entry may not persist"
     mount -t tmpfs tmpfs /mnt/run
 
     # Mount EFI partition inside chroot
@@ -156,6 +158,13 @@ echo "[chroot] Installing GRUB-EFI..."
 apt-get update -qq
 apt-get install -y grub-efi-amd64 grub-efi-amd64-signed shim-signed \
     linux-generic initramfs-tools os-prober 2>&1 | tail -20
+
+echo "[chroot] Removing stale EFI boot entries..."
+if command -v efibootmgr &>/dev/null; then
+    for bootnum in $(efibootmgr | grep -iE 'ubuntu|waveatlas|grub' | grep -oP 'Boot\K[0-9A-Fa-f]{4}'); do
+        efibootmgr -b "$bootnum" -B 2>/dev/null || true
+    done
+fi
 
 echo "[chroot] Installing GRUB to /boot/efi..."
 grub-install --target=x86_64-efi --efi-directory=/boot/efi \
@@ -206,6 +215,7 @@ CHROOT_SCRIPT
     umount /mnt/dev/pts 2>/dev/null || true
     umount /mnt/dev 2>/dev/null || true
     umount /mnt/proc 2>/dev/null || true
+    umount /mnt/sys/firmware/efi/efivars 2>/dev/null || true
     umount /mnt/sys 2>/dev/null || true
     umount /mnt/run 2>/dev/null || true
     umount /mnt 2>/dev/null || true
