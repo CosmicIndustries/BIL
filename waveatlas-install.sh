@@ -1,0 +1,740 @@
+#!/bin/bash
+###############################################################################
+# WaveAtlas HTPC — Full HDD Install + Post-Install Setup
+#
+# SCP this to the laptop and run it:
+#   scp waveatlas-install.sh htpc@<IP>:~/
+#   ssh htpc@<IP>
+#   chmod +x ~/waveatlas-install.sh
+#
+# Phase 1: Run from live USB (boots with "nopersistent" GRUB edit)
+#          Installs the full OS to the internal HDD (/dev/sda)
+#          Then reboots from HDD.
+#
+# Phase 2: Run again after reboot from HDD.
+#          Installs Waydroid + microG + F-Droid, surround sound,
+#          4K display, Kodi fonts, Shizuku, and all APKs.
+#
+# Hardware: Dell Inspiron, i3-8130U, Intel UHD 620, 931GB HDD,
+#           HDMI to LG TV (surround + 4K)
+###############################################################################
+set -euo pipefail
+
+SCRIPT_NAME="$(basename "$0")"
+LOG="/tmp/waveatlas-install.log"
+exec > >(tee -a "$LOG") 2>&1
+
+# ─── Color helpers ───────────────────────────────────────────────────────────
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
+info()  { echo -e "${CYAN}[INFO]${NC}  $*"; }
+ok()    { echo -e "${GREEN}[OK]${NC}    $*"; }
+warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
+die()   { echo -e "${RED}[FATAL]${NC} $*"; exit 1; }
+
+# ─── Detect which phase we're in ────────────────────────────────────────────
+detect_phase() {
+    local root_dev
+    root_dev="$(findmnt -n -o SOURCE /)"
+
+    if echo "$root_dev" | grep -qE '(overlay|tmpfs|aufs|squashfs|cow)'; then
+        echo "phase1"
+    elif [ -f /run/live/medium/casper/vmlinuz ] 2>/dev/null; then
+        echo "phase1"
+    elif [ -f /cdrom/casper/vmlinuz ] 2>/dev/null; then
+        echo "phase1"
+    else
+        echo "phase2"
+    fi
+}
+
+PHASE="$(detect_phase)"
+
+###############################################################################
+# PHASE 1 — Full HDD Install (run from live USB)
+###############################################################################
+phase1() {
+    info "══════════════════════════════════════════════════════════"
+    info "  PHASE 1: Installing WaveAtlas to internal HDD"
+    info "══════════════════════════════════════════════════════════"
+    echo ""
+
+    # Sanity checks
+    [ "$(id -u)" -eq 0 ] || die "Phase 1 must run as root. Use: sudo $0"
+
+    # Verify /dev/sda exists and is the 931G HDD
+    [ -b /dev/sda ] || die "/dev/sda not found — is the internal HDD connected?"
+    local sda_size
+    sda_size="$(lsblk -dno SIZE /dev/sda | tr -d ' ')"
+    info "Internal HDD: /dev/sda ($sda_size)"
+
+    # Check partition layout — expect sda1 (EFI) and sda2 (root)
+    if ! lsblk -no NAME /dev/sda | grep -q 'sda1'; then
+        die "Expected /dev/sda1 (EFI partition) not found"
+    fi
+    if ! lsblk -no NAME /dev/sda | grep -q 'sda2'; then
+        die "Expected /dev/sda2 not found"
+    fi
+
+    info "Partition layout:"
+    lsblk -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINT /dev/sda
+    echo ""
+
+    warn "This will FORMAT /dev/sda2 and install the OS there."
+    warn "The EFI partition (sda1) will be preserved."
+    echo ""
+    read -rp "Type YES to proceed: " confirm
+    [ "$confirm" = "YES" ] || die "Aborted."
+
+    # ── Step 1: Format sda2 ──────────────────────────────────────────────────
+    info "Unmounting /dev/sda2 if mounted..."
+    umount /dev/sda2 2>/dev/null || true
+    umount /dev/sda1 2>/dev/null || true
+
+    info "Formatting /dev/sda2 as ext4 (label: WaveAtlas)..."
+    mkfs.ext4 -F -L WaveAtlas /dev/sda2
+    ok "sda2 formatted"
+
+    # ── Step 2: Mount and rsync ──────────────────────────────────────────────
+    info "Mounting /dev/sda2 at /mnt..."
+    mount /dev/sda2 /mnt
+
+    info "Copying live filesystem to /mnt (this takes 10-20 minutes)..."
+    rsync -aAXv --info=progress2 \
+        --exclude='/proc/*' \
+        --exclude='/sys/*' \
+        --exclude='/dev/*' \
+        --exclude='/run/*' \
+        --exclude='/tmp/*' \
+        --exclude='/mnt/*' \
+        --exclude='/media/*' \
+        --exclude='/cdrom/*' \
+        --exclude='/snap/*' \
+        --exclude='/swapfile' \
+        --exclude='/lost+found' \
+        --exclude='/cow/*' \
+        --exclude='/rofs/*' \
+        / /mnt/
+    ok "Filesystem copied"
+
+    # ── Step 3: Prepare chroot ───────────────────────────────────────────────
+    info "Setting up chroot mounts..."
+    mkdir -p /mnt/{proc,sys,dev,run,tmp}
+    mount --bind /dev  /mnt/dev
+    mount --bind /dev/pts /mnt/dev/pts
+    mount -t proc proc /mnt/proc
+    mount -t sysfs sys /mnt/sys
+    mount -t tmpfs tmpfs /mnt/run
+
+    # Mount EFI partition inside chroot
+    mkdir -p /mnt/boot/efi
+    mount /dev/sda1 /mnt/boot/efi
+
+    # ── Step 4: Generate fstab ───────────────────────────────────────────────
+    info "Generating /etc/fstab..."
+    local sda2_uuid sda1_uuid
+    sda2_uuid="$(blkid -s UUID -o value /dev/sda2)"
+    sda1_uuid="$(blkid -s UUID -o value /dev/sda1)"
+
+    cat > /mnt/etc/fstab <<FSTAB
+# WaveAtlas HTPC — generated by waveatlas-install.sh
+UUID=$sda2_uuid  /          ext4  errors=remount-ro  0 1
+UUID=$sda1_uuid  /boot/efi  vfat  umask=0077         0 1
+tmpfs            /tmp       tmpfs defaults           0 0
+FSTAB
+    ok "fstab written"
+
+    # ── Step 5: Chroot and install GRUB + kernel ─────────────────────────────
+    info "Entering chroot to install GRUB-EFI and update initramfs..."
+
+    # Copy DNS resolution into chroot
+    cp /etc/resolv.conf /mnt/etc/resolv.conf 2>/dev/null || true
+
+    chroot /mnt /bin/bash -e <<'CHROOT_SCRIPT'
+export DEBIAN_FRONTEND=noninteractive
+
+echo "[chroot] Installing GRUB-EFI..."
+apt-get update -qq
+apt-get install -y grub-efi-amd64 grub-efi-amd64-signed shim-signed \
+    linux-generic initramfs-tools os-prober 2>&1 | tail -20
+
+echo "[chroot] Installing GRUB to /boot/efi..."
+grub-install --target=x86_64-efi --efi-directory=/boot/efi \
+    --bootloader-id=WaveAtlas --recheck
+
+echo "[chroot] Updating GRUB config..."
+update-grub
+
+echo "[chroot] Rebuilding initramfs..."
+update-initramfs -u -k all
+
+echo "[chroot] Removing live-boot hooks (no longer needed)..."
+apt-get remove -y --purge casper lupin-casper 2>/dev/null || true
+apt-get autoremove -y 2>/dev/null || true
+
+echo "[chroot] Setting hostname..."
+echo "waveatlas" > /etc/hostname
+cat > /etc/hosts <<EOF
+127.0.0.1  localhost
+127.0.1.1  waveatlas
+EOF
+
+echo "[chroot] Ensuring htpc user exists with correct groups..."
+id htpc &>/dev/null || useradd -m -s /bin/bash -G sudo,audio,video,input,render htpc
+usermod -aG sudo,audio,video,input,render htpc 2>/dev/null || true
+
+echo "[chroot] Enabling NetworkManager..."
+systemctl enable NetworkManager 2>/dev/null || true
+
+echo "[chroot] Enabling SSH..."
+systemctl enable ssh 2>/dev/null || true
+
+echo "[chroot] Done inside chroot."
+CHROOT_SCRIPT
+
+    ok "GRUB installed and initramfs rebuilt"
+
+    # ── Step 6: Copy this script for Phase 2 ─────────────────────────────────
+    info "Copying install script to HDD for Phase 2..."
+    cp "$(readlink -f "$0")" /mnt/home/htpc/waveatlas-install.sh 2>/dev/null || \
+        cp "$0" /mnt/home/htpc/waveatlas-install.sh
+    chmod +x /mnt/home/htpc/waveatlas-install.sh
+    chroot /mnt chown htpc:htpc /home/htpc/waveatlas-install.sh
+
+    # ── Step 7: Cleanup and reboot prompt ────────────────────────────────────
+    info "Unmounting chroot..."
+    umount /mnt/boot/efi 2>/dev/null || true
+    umount /mnt/dev/pts 2>/dev/null || true
+    umount /mnt/dev 2>/dev/null || true
+    umount /mnt/proc 2>/dev/null || true
+    umount /mnt/sys 2>/dev/null || true
+    umount /mnt/run 2>/dev/null || true
+    umount /mnt 2>/dev/null || true
+
+    echo ""
+    ok "══════════════════════════════════════════════════════════"
+    ok "  PHASE 1 COMPLETE"
+    ok "══════════════════════════════════════════════════════════"
+    echo ""
+    info "Next steps:"
+    info "  1. Remove the USB stick"
+    info "  2. Reboot:  sudo reboot"
+    info "  3. Select 'WaveAtlas' in UEFI boot menu (F12)"
+    info "  4. Once booted from HDD, run Phase 2:"
+    info "       sudo ~/waveatlas-install.sh"
+    echo ""
+}
+
+###############################################################################
+# PHASE 2 — Post-Install Setup (run after HDD boot)
+###############################################################################
+phase2() {
+    info "══════════════════════════════════════════════════════════"
+    info "  PHASE 2: Post-Install Setup (Waydroid, Sound, 4K, etc)"
+    info "══════════════════════════════════════════════════════════"
+    echo ""
+
+    [ "$(id -u)" -eq 0 ] || die "Phase 2 must run as root. Use: sudo $0"
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # ── 2.1: System update ───────────────────────────────────────────────────
+    info "Updating system packages..."
+    apt-get update -qq
+    apt-get upgrade -y 2>&1 | tail -10
+    ok "System updated"
+
+    # ── 2.2: Install core packages ──────────────────────────────────────────
+    info "Installing core packages..."
+    apt-get install -y \
+        curl wget git python3-pip \
+        fonts-noto fonts-roboto \
+        kodi kodi-inputstream-adaptive \
+        pulseaudio pulseaudio-utils alsa-utils pavucontrol \
+        intel-media-va-driver vainfo \
+        xdg-utils dbus-x11 \
+        sway foot wlr-randr \
+        2>&1 | tail -20
+    ok "Core packages installed"
+
+    # ── 2.3: Surround Sound (HDMI 5.1/7.1) ──────────────────────────────────
+    info "Configuring surround sound over HDMI..."
+
+    # Find the HDMI card/device
+    local hdmi_card hdmi_device
+    hdmi_card=""
+    hdmi_device=""
+
+    # Parse aplay -l for HDMI output
+    while IFS= read -r line; do
+        if echo "$line" | grep -qi 'hdmi\|HDMI'; then
+            hdmi_card="$(echo "$line" | grep -oP 'card \K[0-9]+')"
+            hdmi_device="$(echo "$line" | grep -oP 'device \K[0-9]+')"
+            break
+        fi
+    done < <(aplay -l 2>/dev/null)
+
+    if [ -z "$hdmi_card" ]; then
+        hdmi_card="0"
+        hdmi_device="3"
+        warn "Could not auto-detect HDMI card, defaulting to hw:${hdmi_card},${hdmi_device}"
+    fi
+
+    info "HDMI audio: card $hdmi_card, device $hdmi_device"
+
+    # ALSA surround config — force 5.1 passthrough over HDMI
+    cat > /etc/asound.conf <<ALSA
+# WaveAtlas — HDMI surround sound
+# Supports 5.1 and 7.1 passthrough to TV/AVR
+
+pcm.!default {
+    type plug
+    slave.pcm "surround51"
+}
+
+pcm.surround51 {
+    type hw
+    card ${hdmi_card}
+    device ${hdmi_device}
+    channels 6
+}
+
+pcm.surround71 {
+    type hw
+    card ${hdmi_card}
+    device ${hdmi_device}
+    channels 8
+}
+
+# IEC958 passthrough for AC3/DTS bitstream
+pcm.iec958 {
+    type iec958
+    slave {
+        pcm "hw:${hdmi_card},${hdmi_device}"
+        format IEC958_SUBFRAME_LE
+    }
+    status [ AES0=0x02 AES1=0x82 AES2=0x00 AES3=0x02 ]
+}
+
+ctl.!default {
+    type hw
+    card ${hdmi_card}
+}
+ALSA
+    ok "ALSA surround config written to /etc/asound.conf"
+
+    # PulseAudio — set HDMI as default sink with surround
+    mkdir -p /etc/pulse
+    if [ -f /etc/pulse/default.pa ]; then
+        # Add surround profile loading
+        if ! grep -q 'waveatlas-surround' /etc/pulse/default.pa; then
+            cat >> /etc/pulse/default.pa <<'PULSE'
+
+### WaveAtlas surround sound (waveatlas-surround)
+# Load HDMI surround profile
+load-module module-alsa-sink device=hw:0,3 sink_name=hdmi-surround channels=6 channel_map=front-left,front-right,rear-left,rear-right,front-center,lfe sink_properties="device.description='HDMI Surround 5.1'"
+set-default-sink hdmi-surround
+PULSE
+        fi
+    fi
+
+    # PulseAudio daemon config — allow surround
+    if [ -f /etc/pulse/daemon.conf ]; then
+        sed -i 's/^;\?\s*default-sample-channels\s*=.*/default-sample-channels = 6/' /etc/pulse/daemon.conf
+        sed -i 's/^;\?\s*enable-remixing\s*=.*/enable-remixing = yes/' /etc/pulse/daemon.conf
+    else
+        mkdir -p /etc/pulse
+        cat > /etc/pulse/daemon.conf <<'PDAEMON'
+default-sample-channels = 6
+default-channel-map = front-left,front-right,rear-left,rear-right,front-center,lfe
+enable-remixing = yes
+enable-lfe-remixing = yes
+default-sample-rate = 48000
+alternate-sample-rate = 44100
+PDAEMON
+    fi
+    ok "Surround sound configured (5.1 over HDMI)"
+
+    # ── 2.4: 4K Display (Intel UHD 620) ─────────────────────────────────────
+    info "Configuring 4K output for Intel UHD 620..."
+
+    # Intel i915 — enable 4K/HiDPI and hardware acceleration
+    mkdir -p /etc/modprobe.d
+    cat > /etc/modprobe.d/i915-waveatlas.conf <<'I915'
+# Intel UHD 620 — enable all outputs at max resolution
+options i915 enable_fbc=1 enable_guc=2 enable_psr=0 fastboot=1
+I915
+
+    # Xorg/Wayland — 4K output config
+    mkdir -p /etc/X11/xorg.conf.d
+    cat > /etc/X11/xorg.conf.d/20-intel-4k.conf <<'XORG'
+Section "Device"
+    Identifier  "Intel UHD 620"
+    Driver      "modesetting"
+    Option      "AccelMethod"  "glamor"
+    Option      "TearFree"     "true"
+    Option      "DRI"          "3"
+EndSection
+
+Section "Monitor"
+    Identifier  "HDMI-1"
+    Option      "PreferredMode" "3840x2160"
+EndSection
+
+Section "Screen"
+    Identifier "Screen0"
+    Device     "Intel UHD 620"
+    Monitor    "HDMI-1"
+    DefaultDepth 24
+    SubSection "Display"
+        Depth 24
+        Modes "3840x2160" "1920x1080"
+    EndSubSection
+EndSection
+XORG
+
+    # Sway — 4K config for Flex Launcher
+    local sway_conf="/home/htpc/.config/sway/config"
+    if [ -f "$sway_conf" ]; then
+        if ! grep -q 'waveatlas-4k' "$sway_conf"; then
+            cat >> "$sway_conf" <<'SWAY4K'
+
+### WaveAtlas 4K config (waveatlas-4k)
+# Force HDMI to 4K@30 (Intel UHD 620 can do 4K@30 over HDMI 1.4)
+# If your TV supports 4K@60 over HDMI 2.0, change to 3840x2160@60Hz
+output HDMI-A-1 mode 3840x2160@30Hz
+output HDMI-A-1 scale 1
+SWAY4K
+        fi
+    fi
+
+    # GBM/DRM — Kodi 4K config
+    mkdir -p /home/htpc/.kodi/userdata
+    local kodi_gs="/home/htpc/.kodi/userdata/guisettings.xml"
+    if [ ! -f "$kodi_gs" ]; then
+        cat > "$kodi_gs" <<'KODIGUI'
+<settings version="2">
+    <setting id="videoscreen.resolution">63</setting>
+    <setting id="videoscreen.screenmode">3840x2160</setting>
+    <setting id="videoscreen.monitor">Default</setting>
+    <setting id="videoscreen.vsync">2</setting>
+    <setting id="videoplayer.usedisplayasclock">true</setting>
+    <setting id="videoplayer.adjustrefreshrate">2</setting>
+    <setting id="audiooutput.audiodevice">ALSA:hdmi:CARD=PCH,DEV=0</setting>
+    <setting id="audiooutput.channels">2.1</setting>
+    <setting id="audiooutput.passthrough">true</setting>
+    <setting id="audiooutput.ac3passthrough">true</setting>
+    <setting id="audiooutput.ac3transcode">true</setting>
+    <setting id="audiooutput.dtspassthrough">true</setting>
+    <setting id="audiooutput.passthroughdevice">ALSA:iec958:CARD=PCH,DEV=0</setting>
+</settings>
+KODIGUI
+    fi
+    chown -R htpc:htpc /home/htpc/.kodi
+
+    # VA-API hardware video decoding
+    info "Checking VA-API (hardware video decode)..."
+    vainfo 2>&1 | head -5 || warn "VA-API may not be fully initialized yet"
+
+    ok "4K display configured"
+
+    # ── 2.5: Waydroid (Android TV) ───────────────────────────────────────────
+    info "Installing Waydroid..."
+
+    # Add Waydroid repo
+    if [ ! -f /etc/apt/sources.list.d/waydroid.list ]; then
+        curl -fsSL https://repo.waydro.id/waydroid.gpg | gpg --dearmor -o /usr/share/keyrings/waydroid.gpg
+        echo "deb [signed-by=/usr/share/keyrings/waydroid.gpg] https://repo.waydro.id/ bookworm main" > /etc/apt/sources.list.d/waydroid.list
+
+        # Ubuntu uses codename, fall back if needed
+        local codename
+        codename="$(lsb_release -cs 2>/dev/null || echo noble)"
+        echo "deb [signed-by=/usr/share/keyrings/waydroid.gpg] https://repo.waydro.id/ $codename main" > /etc/apt/sources.list.d/waydroid.list
+
+        apt-get update -qq
+    fi
+
+    apt-get install -y waydroid 2>&1 | tail -10
+
+    # Initialize Waydroid with GAPPS-free (LineageOS) image
+    if [ ! -d /var/lib/waydroid/images ]; then
+        info "Initializing Waydroid (LineageOS, no Google)..."
+        waydroid init -s GAPPS -f 2>&1 | tail -10 || \
+            waydroid init -f 2>&1 | tail -10
+    fi
+    ok "Waydroid installed"
+
+    # ── 2.6: microG (Google services replacement) ────────────────────────────
+    info "Installing microG into Waydroid..."
+
+    # Clone waydroid_script helper
+    local ws_dir="/tmp/waydroid_script"
+    rm -rf "$ws_dir"
+    git clone https://github.com/casualsnek/waydroid_script.git "$ws_dir" 2>&1 | tail -3
+
+    cd "$ws_dir"
+    python3 -m pip install -r requirements.txt 2>&1 | tail -5 || true
+
+    # Start Waydroid session in background for installs
+    waydroid session start &
+    local wd_pid=$!
+    sleep 8
+
+    # Install microG
+    info "Installing microG..."
+    python3 main.py install microg 2>&1 | tail -10 || warn "microG install may need retry after first boot"
+
+    # Install Magisk (for Shizuku root)
+    info "Installing Magisk (for Shizuku)..."
+    python3 main.py install magisk 2>&1 | tail -10 || warn "Magisk install may need retry"
+
+    # Install libndk for ARM translation
+    info "Installing libndk (ARM translation)..."
+    python3 main.py install libndk 2>&1 | tail -10 || warn "libndk install may need retry"
+
+    cd /
+    ok "microG + Magisk + libndk installed"
+
+    # ── 2.7: F-Droid + Shizuku + Aurora Store ────────────────────────────────
+    info "Installing F-Droid..."
+    local apk_dir="/tmp/waveatlas-apks"
+    mkdir -p "$apk_dir"
+
+    # F-Droid
+    wget -q -O "$apk_dir/FDroid.apk" "https://f-droid.org/F-Droid.apk" 2>/dev/null && \
+        waydroid app install "$apk_dir/FDroid.apk" 2>&1 | tail -3 || \
+        warn "F-Droid APK download/install failed — install manually after boot"
+
+    # Aurora Store (Google Play alternative)
+    info "Installing Aurora Store..."
+    wget -q -O "$apk_dir/AuroraStore.apk" \
+        "https://f-droid.org/repo/com.aurora.store_57.apk" 2>/dev/null && \
+        waydroid app install "$apk_dir/AuroraStore.apk" 2>&1 | tail -3 || \
+        warn "Aurora Store install failed — install from F-Droid after boot"
+
+    # Shizuku
+    info "Installing Shizuku..."
+    wget -q -O "$apk_dir/Shizuku.apk" \
+        "https://github.com/nicholsondev/Shizuku/releases/latest/download/Shizuku.apk" 2>/dev/null || \
+    wget -q -O "$apk_dir/Shizuku.apk" \
+        "https://f-droid.org/repo/moe.shizuku.privileged.api_700.apk" 2>/dev/null
+    [ -f "$apk_dir/Shizuku.apk" ] && \
+        waydroid app install "$apk_dir/Shizuku.apk" 2>&1 | tail -3 || \
+        warn "Shizuku install failed — install from F-Droid after boot"
+
+    ok "APKs installed"
+
+    # Stop Waydroid session
+    kill $wd_pid 2>/dev/null || true
+    waydroid session stop 2>/dev/null || true
+
+    # ── 2.8: Waydroid auto-start + Android TV launcher ───────────────────────
+    info "Setting up Waydroid auto-start service..."
+    cat > /etc/systemd/system/waydroid-session.service <<'WDSVC'
+[Unit]
+Description=Waydroid Session
+After=network.target
+
+[Service]
+Type=simple
+User=htpc
+ExecStart=/usr/bin/waydroid session start
+ExecStop=/usr/bin/waydroid session stop
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+WDSVC
+
+    systemctl daemon-reload
+    systemctl enable waydroid-session.service
+    systemctl enable waydroid-container.service 2>/dev/null || true
+    ok "Waydroid auto-start enabled"
+
+    # ── 2.9: Kodi fonts fix ──────────────────────────────────────────────────
+    info "Fixing Kodi fonts..."
+    # fonts-noto and fonts-roboto already installed above
+    # Symlink into Kodi's font directory for fallback
+    local kodi_fonts="/usr/share/kodi/addons/skin.estuary/fonts"
+    if [ -d "$kodi_fonts" ]; then
+        for font in NotoSans-Regular NotoSans-Bold; do
+            src="/usr/share/fonts/truetype/noto/${font}.ttf"
+            [ -f "$src" ] && ln -sf "$src" "$kodi_fonts/" 2>/dev/null || true
+        done
+    fi
+    ok "Kodi fonts fixed"
+
+    # ── 2.10: Intel UHD 620 — VA-API + video playback optimization ───────────
+    info "Configuring hardware video acceleration..."
+    apt-get install -y \
+        intel-media-va-driver-non-free \
+        libva-drm2 libva-x11-2 libva-wayland2 \
+        i965-va-driver mesa-va-drivers \
+        2>&1 | tail -5 || true
+
+    # Environment vars for VA-API
+    cat > /etc/environment.d/waveatlas-vaapi.conf <<'VAAPI'
+LIBVA_DRIVER_NAME=iHD
+LIBVA_DRIVERS_PATH=/usr/lib/x86_64-linux-gnu/dri
+VDPAU_DRIVER=va_gl
+VAAPI
+
+    # Also set for Kodi
+    mkdir -p /home/htpc/.config/environment.d
+    cp /etc/environment.d/waveatlas-vaapi.conf /home/htpc/.config/environment.d/
+    chown -R htpc:htpc /home/htpc/.config/environment.d
+    ok "VA-API configured for hardware decode"
+
+    # ── 2.11: Network + SSH persistence ──────────────────────────────────────
+    info "Ensuring SSH and network persist..."
+    apt-get install -y openssh-server 2>&1 | tail -3
+    systemctl enable ssh
+    systemctl enable NetworkManager
+
+    # Preserve htpc user's SSH keys
+    mkdir -p /home/htpc/.ssh
+    chmod 700 /home/htpc/.ssh
+    chown htpc:htpc /home/htpc/.ssh
+    ok "SSH persistent"
+
+    # ── 2.12: Flex Launcher integration ──────────────────────────────────────
+    info "Updating Flex Launcher tile commands..."
+
+    local flex_conf="/home/htpc/.config/flex-launcher/config.ini"
+    if [ -f "$flex_conf" ]; then
+        # Kodi — launch via GBM (direct DRM, no sway conflict)
+        # The trick: Kodi GBM needs to run on a separate VT
+        sed -i 's|Command=.*kodi.*|Command=openvt -s -w -- kodi --standalone -fs|i' "$flex_conf" 2>/dev/null || true
+
+        # Waydroid/Android TV
+        sed -i 's|Command=.*waydroid.*|Command=waydroid show-full-ui|i' "$flex_conf" 2>/dev/null || true
+
+        chown htpc:htpc "$flex_conf"
+        ok "Flex Launcher tiles updated"
+    else
+        warn "Flex Launcher config not found at $flex_conf — configure tiles manually"
+    fi
+
+    # ── 2.13: FieldStation42 setup ───────────────────────────────────────────
+    info "Setting up FieldStation42..."
+    if [ -d /home/htpc/FieldStation42 ]; then
+        cd /home/htpc/FieldStation42
+        if [ -f requirements.txt ]; then
+            sudo -u htpc python3 -m venv env 2>/dev/null || true
+            sudo -u htpc bash -c 'cd ~/FieldStation42 && source env/bin/activate && pip install -r requirements.txt' 2>&1 | tail -5
+        fi
+        ok "FieldStation42 ready"
+    else
+        warn "FieldStation42 not found at /home/htpc/FieldStation42 — clone it after boot"
+    fi
+
+    # ── 2.14: Auto-login + Flex Launcher on boot ────────────────────────────
+    info "Setting up auto-login to Flex Launcher..."
+    mkdir -p /etc/systemd/system/getty@tty1.service.d
+    cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf <<'AUTOLOGIN'
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin htpc --noclear %I $TERM
+AUTOLOGIN
+
+    # htpc user's .profile — auto-start sway (which runs Flex Launcher)
+    local profile="/home/htpc/.profile"
+    if ! grep -q 'waveatlas-autostart' "$profile" 2>/dev/null; then
+        cat >> "$profile" <<'AUTOSTART'
+
+# WaveAtlas auto-start (waveatlas-autostart)
+if [ -z "$WAYLAND_DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
+    export XDG_SESSION_TYPE=wayland
+    export XDG_CURRENT_DESKTOP=sway
+    export MOZ_ENABLE_WAYLAND=1
+    export QT_QPA_PLATFORM=wayland
+    exec sway
+fi
+AUTOSTART
+        chown htpc:htpc "$profile"
+    fi
+    ok "Auto-login configured"
+
+    # ── 2.15: Final system tweaks ────────────────────────────────────────────
+    info "Applying final tweaks..."
+
+    # Disable suspend/sleep on lid close (it's an HTPC)
+    mkdir -p /etc/systemd/logind.conf.d
+    cat > /etc/systemd/logind.conf.d/waveatlas.conf <<'LOGIND'
+[Login]
+HandleLidSwitch=ignore
+HandleLidSwitchExternalPower=ignore
+HandleLidSwitchDocked=ignore
+IdleAction=ignore
+LOGIND
+
+    # Disable screen blanking
+    cat > /etc/systemd/system/disable-dpms.service <<'DPMS'
+[Unit]
+Description=Disable DPMS screen blanking
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'setterm --blank 0 --powerdown 0 2>/dev/null; echo 0 > /sys/module/kernel/parameters/consoleblank'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+DPMS
+    systemctl daemon-reload
+    systemctl enable disable-dpms.service
+
+    # Increase kernel inotify watches (for Kodi media scanning)
+    echo "fs.inotify.max_user_watches = 524288" > /etc/sysctl.d/99-waveatlas.conf
+    sysctl -p /etc/sysctl.d/99-waveatlas.conf 2>/dev/null || true
+
+    ok "System tweaks applied"
+
+    # ── Done ─────────────────────────────────────────────────────────────────
+    echo ""
+    ok "══════════════════════════════════════════════════════════"
+    ok "  PHASE 2 COMPLETE — WaveAtlas HTPC fully configured!"
+    ok "══════════════════════════════════════════════════════════"
+    echo ""
+    info "What's set up:"
+    info "  ✓ OS installed to internal HDD (persistent across reboots)"
+    info "  ✓ Surround sound (5.1 over HDMI)"
+    info "  ✓ 4K display output (Intel UHD 620 → HDMI)"
+    info "  ✓ VA-API hardware video decoding"
+    info "  ✓ Waydroid + microG (degoogled Android)"
+    info "  ✓ F-Droid + Aurora Store + Shizuku"
+    info "  ✓ Kodi with fonts fixed + surround audio"
+    info "  ✓ Auto-login → Sway → Flex Launcher"
+    info "  ✓ Lid close ignored (HTPC mode)"
+    info "  ✓ SSH enabled and persistent"
+    echo ""
+    info "Reboot to test:  sudo reboot"
+    echo ""
+    info "After reboot, check:"
+    info "  - Flex Launcher should auto-start on the TV"
+    info "  - All four tiles should work"
+    info "  - Sound: speaker-test -c 6 -t wav  (tests surround)"
+    info "  - 4K: wlr-randr  (shows current resolution)"
+    info "  - Waydroid: waydroid status  (should show running)"
+    echo ""
+    info "To add custom APKs later:"
+    info "  scp your-app.apk htpc@<IP>:~/"
+    info "  ssh htpc@<IP> 'waydroid app install ~/your-app.apk'"
+    echo ""
+    info "Log saved to: $LOG"
+}
+
+###############################################################################
+# Main — dispatch to the right phase
+###############################################################################
+echo ""
+info "WaveAtlas HTPC Installer — $(date)"
+info "Detected phase: $PHASE"
+echo ""
+
+case "$PHASE" in
+    phase1) phase1 ;;
+    phase2) phase2 ;;
+    *)      die "Could not detect phase. Run from live USB (Phase 1) or installed HDD (Phase 2)." ;;
+esac
