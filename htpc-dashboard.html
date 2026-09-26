@@ -367,9 +367,9 @@
   }
 
   function applyTheme(c) {
-    if (c === "dark") document.documentElement.setAttribute("data-theme", "dark");
-    else if (c === "light") document.documentElement.setAttribute("data-theme", "light");
-    else document.documentElement.removeAttribute("data-theme");
+    if (c === "dark") document.documentElement.dataset.theme = "dark";
+    else if (c === "light") document.documentElement.dataset.theme = "light";
+    else delete document.documentElement.dataset.theme;
   }
 
   // ── Semantic color map ──
@@ -449,9 +449,9 @@
     top:       ["▸ Top: kodi 8.4%, pipewire 3.2%, Xwayland 1.8%"]
   };
 
-  // ── DOM helpers (safe: no innerHTML, no open-ended setAttribute, no cssText) ──
-  var ATTR_WL = {id:1,type:1,placeholder:1,value:1,width:1,height:1,title:1,autocomplete:1,autocapitalize:1,spellcheck:1,name:1,role:1,tabindex:1,playsinline:1};
+  // ── DOM helpers (safe: no innerHTML, no setAttribute, no cssText) ──
   var BOOL_WL = {selected:1,disabled:1,hidden:1,autoplay:1,muted:1};
+  var PROP_MAP = {id:"id",type:"type",placeholder:"placeholder",value:"value",width:"width",height:"height",title:"title",autocomplete:"autocomplete",autocapitalize:"autocapitalize",spellcheck:"spellcheck",name:"name",role:"role",tabindex:"tabIndex",playsinline:"playsInline"};
 
   function el(tag, attrs, children) {
     var node = document.createElement(tag);
@@ -464,7 +464,7 @@
         else if (k === "style") { var sk = Object.keys(v); for (var j = 0; j < sk.length; j++) node.style[sk[j]] = v[sk[j]]; }
         else if (k.charAt(0) === "o" && k.charAt(1) === "n") node.addEventListener(k.slice(2), v);
         else if (BOOL_WL[k]) node[k] = !!v;
-        else if (ATTR_WL[k]) node.setAttribute(k, v);
+        else if (PROP_MAP[k]) node[PROP_MAP[k]] = v;
       }
     }
     if (children) {

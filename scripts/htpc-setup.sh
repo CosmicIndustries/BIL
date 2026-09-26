@@ -64,9 +64,9 @@ echo
 # ── 6. Verify output ────────────────────────────────────────────────
 bold "[6/6] Verifying output WAV..."
 
-python3 -c "
-import wave, json, os
-d = '$OUTPUT_DIR'
+python3 - "$OUTPUT_DIR" <<'PYEOF'
+import wave, json, os, sys
+d = sys.argv[1]
 with wave.open(os.path.join(d, 'audio.wav')) as w:
     rate = w.getframerate()
     depth = w.getsampwidth() * 8
@@ -79,11 +79,11 @@ with wave.open(os.path.join(d, 'audio.wav')) as w:
 
 with open(os.path.join(d, 'manifest.json')) as f:
     m = json.load(f)
-    print(f'  Protocol: {m[\"protocol\"]}')
+    print(f'  Protocol: {m["protocol"]}')
     if m.get('safety_warnings'):
         for w in m['safety_warnings']:
             print(f'  WARNING:  {w}')
-"
+PYEOF
 
 echo
 ok "Setup complete. Files are in $OUTPUT_DIR"
