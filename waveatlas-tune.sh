@@ -203,12 +203,7 @@ fi
 info "── Disabling Unnecessary Services ──"
 
 for svc in \
-    bluetooth.service \
-    ModemManager.service \
-    cups.service \
-    cups-browsed.service \
-    avahi-daemon.service \
-    wpa_supplicant.service; do
+    ModemManager.service; do
     if systemctl is-enabled "$svc" &>/dev/null; then
         systemctl disable "$svc" 2>/dev/null || true
         systemctl stop "$svc" 2>/dev/null || true
@@ -216,8 +211,7 @@ for svc in \
     fi
 done
 
-ok "Unnecessary services disabled"
-warn "If you need Wi-Fi, re-enable wpa_supplicant: sudo systemctl enable --now wpa_supplicant"
+ok "Unnecessary services disabled (kept: bluetooth, cups, Wi-Fi, avahi)"
 
 ###############################################################################
 # 9. Animated Wallpaper (APNG/Video via mpvpaper)
@@ -330,7 +324,7 @@ info "  ✓ CPU: schedutil governor, turbo boost on"
 info "  ✓ Intel GPU: FBC, GuC, fastboot, VA-API"
 info "  ✓ preload (predictive app prefetching)"
 info "  ✓ tmpfs /tmp (temp I/O stays in RAM)"
-info "  ✓ Unnecessary services disabled"
+info "  ✓ ModemManager disabled (bluetooth, cups, Wi-Fi kept)"
 info "  ✓ mpvpaper animated wallpaper (APNG/video)"
 info "  ✓ Journal capped at 200MB"
 echo ""
@@ -342,5 +336,4 @@ echo ""
 info "To test animated wallpaper manually:"
 info "  mpvpaper -o '--loop --no-audio --hwdec=vaapi --panscan=1.0' '*' ~/path/to/wallpaper.apng"
 echo ""
-warn "If you need Wi-Fi: sudo systemctl enable --now wpa_supplicant"
-warn "If you need Bluetooth: sudo systemctl enable --now bluetooth"
+warn "If you need to disable ModemManager check: sudo systemctl status ModemManager"
