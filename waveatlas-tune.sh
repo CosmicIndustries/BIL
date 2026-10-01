@@ -40,7 +40,7 @@ echo ""
 info "── HDD I/O Tuning ──"
 
 # mq-deadline is best for rotational drives — low latency, fair queuing
-cat > /etc/udev/rules.d/60-waveatlas-iosched.rules <<'UDEV'
+install -m 644 /dev/stdin /etc/udev/rules.d/60-waveatlas-iosched.rules <<'UDEV'
 # WaveAtlas: mq-deadline for rotational HDD, none for SSD/NVMe
 ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="mq-deadline"
 ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="none"
@@ -55,7 +55,7 @@ fi
 # Increase readahead to 2MB for HDD — helps with sequential media reads
 if [ -b /dev/sda ]; then
     blockdev --setra 4096 /dev/sda 2>/dev/null || true
-    cat > /etc/udev/rules.d/61-waveatlas-readahead.rules <<'RA'
+    install -m 644 /dev/stdin /etc/udev/rules.d/61-waveatlas-readahead.rules <<'RA'
 ACTION=="add|change", KERNEL=="sda", ATTR{queue/read_ahead_kb}="2048"
 RA
 fi
@@ -69,7 +69,7 @@ info "── zram Compressed Swap ──"
 
 apt-get install -y -qq zram-tools 2>/dev/null || true
 
-cat > /etc/default/zramswap <<'ZRAM'
+install -m 644 /dev/stdin /etc/default/zramswap <<'ZRAM'
 # WaveAtlas: zram compressed swap — keeps swap in RAM, avoids HDD
 ALGO=zstd
 PERCENT=50
@@ -91,7 +91,7 @@ ok "zram swap enabled (zstd, 50% of RAM, priority 100)"
 ###############################################################################
 info "── Kernel VM Tuning ──"
 
-cat > /etc/sysctl.d/99-waveatlas-perf.conf <<'SYSCTL'
+install -m 644 /dev/stdin /etc/sysctl.d/99-waveatlas-perf.conf <<'SYSCTL'
 # WaveAtlas — HTPC performance tuning for HDD + 8GB RAM
 
 # Prefer RAM over swap — HDD swap is glacial
@@ -121,7 +121,7 @@ info "── CPU Governor ──"
 apt-get install -y -qq cpufrequtils 2>/dev/null || true
 
 # schedutil is the best for interactive use — scales with load, saves power at idle
-cat > /etc/default/cpufrequtils <<'CPU'
+install -m 644 /dev/stdin /etc/default/cpufrequtils <<'CPU'
 GOVERNOR="schedutil"
 CPU
 
@@ -166,8 +166,8 @@ if [ -f /etc/default/grub ]; then
 fi
 
 # VA-API environment for sway
-cat > /etc/environment.d/90-waveatlas-gpu.conf <<'GPUENV' 2>/dev/null || \
-    { mkdir -p /etc/environment.d && cat > /etc/environment.d/90-waveatlas-gpu.conf <<'GPUENV'; }
+install -d -m 755 /etc/environment.d
+install -m 644 /dev/stdin /etc/environment.d/90-waveatlas-gpu.conf <<'GPUENV'
 LIBVA_DRIVER_NAME=iHD
 VDPAU_DRIVER=va_gl
 GPUENV
@@ -219,37 +219,40 @@ ok "Unnecessary services disabled (kept: bluetooth, cups, Wi-Fi, avahi)"
 info "── Animated Wallpaper (mpvpaper) ──"
 
 # mpvpaper uses mpv to render video/animated images as sway wallpaper
-apt-get install -y -qq mpv 2>/dev/null || true
-
-# Build mpvpaper from source
+# Try apt first, build from source only if not packaged
 if ! command -v mpvpaper &>/dev/null; then
-    info "Building mpvpaper from source..."
-    apt-get install -y -qq \
-        meson ninja-build \
-        libmpv-dev libwayland-dev wayland-protocols \
-        pkg-config libwlroots-dev 2>/dev/null || true
+    info "Installing mpvpaper via apt..."
+    apt-get install -y -qq mpv mpvpaper 2>/dev/null || {
+        warn "mpvpaper not in apt repos — building from source"
+        apt-get install -y -qq mpv 2>/dev/null || true
+        apt-get install -y -qq \
+            meson ninja-build \
+            libmpv-dev libwayland-dev wayland-protocols \
+            pkg-config libwlroots-dev 2>/dev/null || true
 
-    BUILD_DIR="$(mktemp -d)"
-    git clone --depth 1 https://github.com/GhostNaN/mpvpaper.git "$BUILD_DIR/mpvpaper"
-    cd "$BUILD_DIR/mpvpaper"
-    meson setup build
-    ninja -C build
-    ninja -C build install
-    cd /
-    rm -rf "$BUILD_DIR"
+        BUILD_DIR="$(mktemp -d)"
+        git clone --depth 1 https://github.com/GhostNaN/mpvpaper.git "$BUILD_DIR/mpvpaper"
+        cd "$BUILD_DIR/mpvpaper"
+        meson setup build
+        ninja -C build
+        ninja -C build install
+        cd /
+        rm -rf "$BUILD_DIR"
+    }
     ok "mpvpaper installed"
 else
     ok "mpvpaper already installed"
 fi
 
-# Create wallpaper directory
-WALLPAPER_DIR="$HTPC_HOME/.local/share/wallpapers"
-mkdir -p "$WALLPAPER_DIR"
+MPVPAPER_BIN="$(command -v mpvpaper)"
 
-# Drop a sample config — user places their .apng/.mp4/.webm in the wallpaper dir
-cat > "$HTPC_HOME/.config/mpvpaper.conf" <<'MPVCFG'
-# mpvpaper config — animated wallpaper for sway
-# Loops the wallpaper, no audio, no OSD
+# Create wallpaper directory with proper ownership
+WALLPAPER_DIR="$HTPC_HOME/.local/share/wallpapers"
+install -d -o "$HTPC_USER" -g "$HTPC_USER" -m 755 "$WALLPAPER_DIR"
+
+# Install mpvpaper config
+install -d -o "$HTPC_USER" -g "$HTPC_USER" -m 755 "$HTPC_HOME/.config"
+install -o "$HTPC_USER" -g "$HTPC_USER" -m 644 /dev/stdin "$HTPC_HOME/.config/mpvpaper.conf" <<'MPVCFG'
 loop
 no-audio
 no-osd
@@ -258,11 +261,10 @@ video-unscaled=downscale-big
 hwdec=vaapi
 MPVCFG
 
-# Create a systemd user service for mpvpaper
+# Install systemd user service
 SYSTEMD_USER="$HTPC_HOME/.config/systemd/user"
-mkdir -p "$SYSTEMD_USER"
-
-cat > "$SYSTEMD_USER/mpvpaper.service" <<MPVSVC
+install -d -o "$HTPC_USER" -g "$HTPC_USER" -m 755 "$SYSTEMD_USER"
+install -o "$HTPC_USER" -g "$HTPC_USER" -m 644 /dev/stdin "$SYSTEMD_USER/mpvpaper.service" <<MPVSVC
 [Unit]
 Description=Animated wallpaper via mpvpaper
 After=graphical-session.target
@@ -270,9 +272,7 @@ Requisite=graphical-session.target
 
 [Service]
 Type=simple
-# Set your wallpaper file here — APNG, GIF, MP4, WEBM all work
-# Change HDMI-A-1 to your output name (check with: wlr-randr)
-ExecStart=/usr/local/bin/mpvpaper -o "--config=$HTPC_HOME/.config/mpvpaper.conf" '*' $HTPC_HOME/.local/share/wallpapers/wallpaper.apng
+ExecStart=${MPVPAPER_BIN} -o "--config=$HTPC_HOME/.config/mpvpaper.conf" '*' $HTPC_HOME/.local/share/wallpapers/wallpaper.apng
 Restart=on-failure
 RestartSec=5
 
@@ -280,9 +280,6 @@ RestartSec=5
 WantedBy=graphical-session.target
 MPVSVC
 
-chown -R "${HTPC_USER}:${HTPC_USER}" "$WALLPAPER_DIR" "$HTPC_HOME/.config/mpvpaper.conf" "$SYSTEMD_USER/mpvpaper.service"
-
-# Enable the service for the user
 su - "$HTPC_USER" -c "systemctl --user daemon-reload" 2>/dev/null || true
 su - "$HTPC_USER" -c "systemctl --user enable mpvpaper.service" 2>/dev/null || true
 
@@ -290,7 +287,6 @@ ok "mpvpaper configured as systemd user service"
 info "  Wallpaper dir: $WALLPAPER_DIR"
 info "  Drop your .apng/.mp4/.webm as: $WALLPAPER_DIR/wallpaper.apng"
 info "  Or edit: $SYSTEMD_USER/mpvpaper.service (ExecStart line)"
-info "  Supports: APNG, GIF, MP4, WEBM, any format mpv plays"
 info "  Uses VA-API hardware decoding for efficiency"
 
 ###############################################################################
@@ -298,8 +294,8 @@ info "  Uses VA-API hardware decoding for efficiency"
 ###############################################################################
 info "── Journal Size Limit ──"
 
-mkdir -p /etc/systemd/journald.conf.d
-cat > /etc/systemd/journald.conf.d/waveatlas.conf <<'JOURNAL'
+install -d -m 755 /etc/systemd/journald.conf.d
+install -m 644 /dev/stdin /etc/systemd/journald.conf.d/waveatlas.conf <<'JOURNAL'
 [Journal]
 SystemMaxUse=200M
 MaxRetentionSec=7day
