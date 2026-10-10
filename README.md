@@ -42,6 +42,9 @@ English input
 ## Quick Start
 
 ```bash
+# Install the HTTP client dependency (only needed for adapters.py / server.py)
+pip install -r requirements.txt
+
 # Run demo (8 test cases)
 python3 bil_v07_interpreter.py
 
@@ -134,6 +137,51 @@ Call `n8n_handle(payload)` directly or wire the file as a Python node.
 
 ---
 
+## HTTP Adapters (`adapters.py`)
+
+Outbound HTTP calls to LLM providers and n8n webhooks use [httpx](https://www.python-httpx.org/) rather than `requests` or raw `urllib`, per `plan.md`'s adapter layer:
+
+```python
+from adapters import call_openai, call_claude, forward_to_n8n
+
+call_openai(bil_tokens, model="gpt-4o-mini")   # OPENAI_API_KEY env var, or pass api_key=
+call_claude(bil_tokens, model="claude-sonnet-5")  # ANTHROPIC_API_KEY env var, or pass api_key=
+forward_to_n8n(webhook_url, n8n_handle(payload))  # relay a round-trip result to an n8n webhook
+```
+
+Each function opens a short-lived `httpx.Client` with explicit connect/read/write/pool timeouts and raises on non-2xx responses — there's no retry/backoff logic yet (see `plan.md`'s rate-limit notes for what that should look like).
+
+`call_openai`/`call_claude` go through `_secure_client()`, which pins TLS to a **1.3 minimum** and negotiates **HTTP/2** (falls back to 1.1 if a hop doesn't support it) — both are fixed, known-good HTTPS endpoints. `forward_to_n8n` deliberately stays on the plain client instead, since n8n webhook URLs are user-supplied and sometimes plain HTTP on a local network; forcing TLS 1.3 there would break that. Requires the `h2` package (`pip install -r requirements.txt` pulls it via the `httpx[http2]` extra).
+
+---
+
+## Local Server + Browser Userscript
+
+`server.py` exposes `n8n_handle` over HTTP with the stdlib (`http.server`, no new dependency — httpx is a client, not a server) so you can hit the interpreter without standing up n8n:
+
+```bash
+python3 server.py
+# BIL webhook server listening on http://127.0.0.1:8787/bil
+# Auth token (set via the userscript's 'Set BIL token' menu command): <token>
+
+curl -X POST http://127.0.0.1:8787/bil \
+    -H 'Content-Type: application/json' \
+    -H 'X-BIL-Token: <token>' \
+    -d '{"input_type": "english", "input_text": "Fix the code."}'
+```
+
+CORS reflects whatever `Origin` a request sends rather than a fixed allow-list (the userscript runs on whatever page you're browsing), so every request must also carry the `X-BIL-Token` header printed at startup (or set via `BIL_AUTH_TOKEN`) — that's the actual gate, since a CORS header alone can't stop a page from making the request in the first place.
+
+`userscript/bil-helper.user.js` is a Tampermonkey/Violentmonkey script: select text on any page, press **Alt+B**, and it POSTs the selection to the server above and shows the output text + BIL tokens in a small overlay next to your selection. The endpoint defaults to `http://127.0.0.1:8787/bil` and both it and the auth token are configurable via the script's Tampermonkey menu commands ("Set BIL endpoint" / "Set BIL token"). The panel UI and Alt+B wiring live in `extension/shared/bil-panel.js`, pulled in via `@require`, rather than being duplicated in the userscript itself.
+
+### `extension/` — native FireDragon/Firefox extension
+
+FireDragon is a Firefox fork, so the userscript above already works there via Violentmonkey. `extension/` is a dedicated WebExtension instead, for anyone who'd rather not run a userscript manager: same Alt+B → selection → overlay behavior, but built with `fetch`/`browser.storage` (a content script has no `GM_*` APIs) and a toolbar popup (`popup.html`/`popup.js`) in place of Tampermonkey's menu commands for setting the endpoint and token. `content.js` only handles the network/config layer — the UI comes from `extension/shared/bil-panel.js`, the same file the userscript requires remotely, so that code exists in exactly one place.
+
+Load unpacked in FireDragon/Firefox via `about:debugging` → "This Firefox" → "Load Temporary Add-on" → select `extension/manifest.json`, then click the toolbar icon to set the endpoint/token printed by `server.py`.
+
+---
+
 ## Status
 
 | Component | Status |
@@ -146,6 +194,8 @@ Call `n8n_handle(payload)` directly or wire the file as a Python node.
 | English parser | ⚠️ Lexicon-based (no POS tagger or dependency parse) |
 | Full English dictionary | ❌ Not yet (WordNet compiler pending) |
 | Round-trip fidelity | ⚠️ Predicate/object preserved; complex clauses partial |
+| HTTP adapters (OpenAI/Claude/n8n) | ⚠️ Basic, no retries |
+| Local server + userscript | ✅ Prototype |
 
 **v0.7 passes 7/8 demo cases.** Known gap: adjective predicates (e.g. "is bright") have no predicate slot mapping yet.
 
@@ -176,4 +226,3 @@ Any UI built around BIL (docs sites, n8n dashboards, companion apps) should use 
 ---
 
 *Part of the SANd-X ecosystem.*
-
